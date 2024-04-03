@@ -1,8 +1,17 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import org.hl7.fhir.r4.model.Coding;
+
 import java.util.Objects;
 
-public record HashableCoding(String system, String code) {
+public record HashableCoding(String system, String code, String display) implements ComponentKey {
+    static HashableCoding ofFhirCoding(Coding coding) {
+        return new HashableCoding(coding.getSystem(), coding.getCode(), coding.getDisplay());
+    }
+
+    Coding toFhirCoding() {
+        return new Coding(system, code, display);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -17,5 +26,10 @@ public record HashableCoding(String system, String code) {
     @Override
     public int hashCode() {
         return Objects.hash(system, code);
+    }
+
+    @Override
+    public Coding toCoding() {
+        return new Coding().setSystem(system).setCode(code);
     }
 }

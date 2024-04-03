@@ -37,6 +37,8 @@ class GroupEvaluatorTest {
     static final String STATUS_VALUE_SYSTEM = "http://terminology.hl7.org/CodeSystem/condition-clinical";
     static final String STATUS_DEF_CODE = "clinical-status";
     static final String STATUS_DEF_SYSTEM = "http://fhir-evaluator/strat/system";
+    static final String INITIAL_POPULATION_CODE = "initial-population";
+    static final String INITIAL_POPULATION_SYSTEM = "population-system";
     static final FHIRPathEngine pathEngine = createPathEngine();
 
     @Mock
@@ -51,10 +53,6 @@ class GroupEvaluatorTest {
         return expression.setExpression(expStr);
     }
 
-    private static List<Bundle.BundleEntryComponent> getBundle(List<Resource> resources) {
-        return resources.stream().map(resource -> new Bundle.BundleEntryComponent().setResource(resource)).toList();
-    }
-
     private static Condition getCondition() {
         Coding condCoding = new Coding().setSystem(COND_SYSTEM).setCode(COND_CODING);
         CodeableConcept condConcept = new CodeableConcept().addCoding(condCoding);
@@ -62,10 +60,10 @@ class GroupEvaluatorTest {
         return new Condition().setCode(condConcept);
     }
 
-    private static StratifierCodingKey getStratifierKey(String defCode, String defSystem, String valueCode, String valueSystem) {
-        return new StratifierCodingKey(
-                new HashableCoding(defSystem, defCode),
-                new HashableCoding(valueSystem, valueCode));
+    private static ComponentKeyPair getStratifierKey(String defCode, String defSystem, String valueCode, String valueSystem) {
+        return new ComponentKeyPair(
+                new HashableCoding(defSystem, defCode, SOME_DISPLAY),
+                new HashableCoding(valueSystem, valueCode, SOME_DISPLAY));
     }
 
     private static FHIRPathEngine createPathEngine() {
@@ -89,34 +87,49 @@ class GroupEvaluatorTest {
         class SingleStratifierInGroup {
             @Test
             public void test_oneStratifierElement_oneResultValue() {
-                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(getBundle(List.of(getCondition()))));
+                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(getStratifier().setCriteria(COND_CODE_EXP)
-                        .setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator();
+                                .setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))))).setPopulation(List.of())
+                        .setPopulation(List.of(new Measure.MeasureGroupPopulationComponent()
+                                .setCode(new CodeableConcept(new Coding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY)))
+                                .setCriteria(new Expression().setExpressionElement(new StringType(POPULATION_QUERY)))));
+                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-                var list = groupEvaluator.evaluateGroup(dataStore, pathEngine, measureGroup).block();
+                var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
-                assertThat(list).isNotNull();
-                assertThat(list.size()).isEqualTo(1);
-                assertThat(list.get(0)).isPresent();
-                assertThat(((CodingResult) list.get(0).get()))
-                        .isEqualTo(new CodingResult(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)), 1)));
+                assertThat(result).isNotNull();
+                assertThat(result.populationsCount().initialPopulation().count()).isEqualTo(1);
+                assertThat(result.stratifierResults().size()).isEqualTo(1);
+                assertThat(result.stratifierResults().get(0).counts()).isPresent();
+                assertThat((result.stratifierResults().get(0)))
+                        .isEqualTo(new StratifierResult(
+                                Optional.of(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)),
+                                        new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)));
             }
 
             @Test
             public void test_oneStratifierElement_twoSameResultValues() {
-                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(getBundle(List.of(getCondition(), getCondition()))));
+                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition(), getCondition())));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(getStratifier().setCriteria(COND_CODE_EXP)
-                        .setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator();
+                                .setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))))
+                        .setPopulation(List.of(new Measure.MeasureGroupPopulationComponent()
+                                .setCode(new CodeableConcept(new Coding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY)))
+                                .setCriteria(new Expression().setExpressionElement(new StringType(POPULATION_QUERY)))));
+                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-                var list = groupEvaluator.evaluateGroup(dataStore, pathEngine, measureGroup).block();
+                var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
-                assertThat(list).isNotNull();
-                assertThat(list.size()).isEqualTo(1);
-                assertThat(list.get(0)).isPresent();
-                assertThat(((CodingResult) list.get(0).get()))
-                        .isEqualTo(new CodingResult(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)), 2)));
+                assertThat(result).isNotNull();
+                assertThat(result.populationsCount().initialPopulation().count()).isEqualTo(2);
+                assertThat(result.stratifierResults().size()).isEqualTo(1);
+                assertThat(result.stratifierResults().get(0).counts()).isPresent();
+                assertThat(result.stratifierResults().get(0)).isEqualTo(
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 2)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)));
+
             }
 
             @Test
@@ -135,41 +148,61 @@ class GroupEvaluatorTest {
 
             @Test
             public void test_twoSameStratifierElements() {
-                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(getBundle(List.of(getCondition()))));
+                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(
-                        getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
-                        getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator();
+                                getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
+                                getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))))
+                        .setPopulation(List.of(new Measure.MeasureGroupPopulationComponent()
+                                .setCode(new CodeableConcept(new Coding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY)))
+                                .setCriteria(new Expression().setExpressionElement(new StringType(POPULATION_QUERY)))));
+                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-                var list = groupEvaluator.evaluateGroup(dataStore, pathEngine, measureGroup).block();
+                var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
-                assertThat(list).isNotNull();
-                assertThat(list.size()).isEqualTo(2);
-                assertThat(list.get(0)).isPresent();
-                assertThat(list.get(1)).isPresent();
-                assertThat(list).containsExactly(
-                        Optional.of(new CodingResult(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)), 1))),
-                        Optional.of(new CodingResult(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)), 1))));
+                assertThat(result).isNotNull();
+                assertThat(result.populationsCount().initialPopulation().count()).isEqualTo(1);
+                assertThat(result.stratifierResults().size()).isEqualTo(2);
+                assertThat(result.stratifierResults().get(0).counts()).isPresent();
+                assertThat(result.stratifierResults().get(1).counts()).isPresent();
+                assertThat(result.stratifierResults()).containsExactly(
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)),
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)));
             }
 
             @Test
             public void test_twoStratifierElements_oneResultValueEach() {
-                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(getBundle(List.of(getCondition()
-                        .setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY)))))));
+                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition()
+                        .setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(
-                        getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
-                        getStratifier().setCriteria(COND_STATUS_EXP).setCode(new CodeableConcept(new Coding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY)))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator();
+                                getStratifier().setCriteria(COND_CODE_EXP).setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
+                                getStratifier().setCriteria(COND_STATUS_EXP).setCode(new CodeableConcept(new Coding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY)))))
+                        .setPopulation(List.of(new Measure.MeasureGroupPopulationComponent()
+                                .setCode(new CodeableConcept(new Coding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY)))
+                                .setCriteria(new Expression().setExpressionElement(new StringType(POPULATION_QUERY)))));
+                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-                var list = groupEvaluator.evaluateGroup(dataStore, pathEngine, measureGroup).block();
+                var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
-                assertThat(list).isNotNull();
-                assertThat(list.size()).isEqualTo(2);
-                assertThat(list.get(0)).isPresent();
-                assertThat(list.get(1)).isPresent();
-                assertThat(list).containsExactly(
-                        Optional.of(new CodingResult(Map.of(Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)), 1))),
-                        Optional.of(new CodingResult(Map.of(Set.of(getStratifierKey(STATUS_DEF_CODE, STATUS_DEF_SYSTEM, STATUS_VALUE_CODE, STATUS_VALUE_SYSTEM)), 1))));
+                assertThat(result).isNotNull();
+                assertThat(result.populationsCount().initialPopulation().count()).isEqualTo(1);
+                assertThat(result.stratifierResults().size()).isEqualTo(2);
+                assertThat(result.stratifierResults().get(0).counts()).isPresent();
+                assertThat(result.stratifierResults().get(1).counts()).isPresent();
+                assertThat(result.stratifierResults()).containsExactly(
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)),
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(STATUS_DEF_CODE, STATUS_DEF_SYSTEM, STATUS_VALUE_CODE, STATUS_VALUE_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY)));
             }
         }
 
@@ -181,23 +214,31 @@ class GroupEvaluatorTest {
         class SingleStratifierInGroup {
             @Test
             public void test_oneStratifierElement_twoComponents_oneResultValue() {
-                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(getBundle(List.of(getCondition()
-                        .setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY)))))));
+                when(dataStore.getPopulation(POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition()
+                        .setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(getStratifier().setComponent(List.of(
-                        new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_EXP).setCode(
-                                new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
-                        new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_EXP).setCode(
-                                new CodeableConcept(new Coding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY)))))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator();
+                                        new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_EXP).setCode(
+                                                new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY))),
+                                        new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_EXP).setCode(
+                                                new CodeableConcept(new Coding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY)))))
+                                .setCode(new CodeableConcept(new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)))))
+                        .setPopulation(List.of(new Measure.MeasureGroupPopulationComponent()
+                                .setCode(new CodeableConcept(new Coding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY)))
+                                .setCriteria(new Expression().setExpressionElement(new StringType(POPULATION_QUERY)))));
+                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-                var list = groupEvaluator.evaluateGroup(dataStore, pathEngine, measureGroup).block();
+                var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
-                assertThat(list).isNotNull();
-                assertThat(list.size()).isEqualTo(1);
-                assertThat(list.get(0)).isPresent();
-                assertThat(((CodingResult) list.get(0).get())).isEqualTo(new CodingResult(Map.of(Set.of(
-                        getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM),
-                        getStratifierKey(STATUS_DEF_CODE, STATUS_DEF_SYSTEM, STATUS_VALUE_CODE, STATUS_VALUE_SYSTEM)), 1)));
+                assertThat(result).isNotNull();
+                assertThat(result.populationsCount().initialPopulation().count()).isEqualTo(1);
+                assertThat(result.stratifierResults().size()).isEqualTo(1);
+                assertThat(result.stratifierResults().get(0).counts()).isPresent();
+                assertThat((result.stratifierResults().get(0))).isEqualTo(
+                        new StratifierResult(Optional.of(Map.of(
+                                Set.of(getStratifierKey(COND_DEF_CODE, COND_DEF_SYSTEM, COND_CODING, COND_SYSTEM),
+                                        getStratifierKey(STATUS_DEF_CODE, STATUS_DEF_SYSTEM, STATUS_VALUE_CODE, STATUS_VALUE_SYSTEM)),
+                                new PopulationsCount(new PopulationCount(new HashableCoding(INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE, SOME_DISPLAY), 1)))),
+                                new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY)));
             }
 
             @Test

@@ -2,61 +2,79 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Base;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Measure;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
 public class StratifierEvaluator {
 
-    public static Optional<StratifierResult> evaluateStratElemOnResource(FHIRPathEngine fhirPathEngine,
-                                                                         Bundle.BundleEntryComponent entry,
-                                                                         Measure.MeasureGroupStratifierComponent stratifier) {
-        return evaluateCoding(fhirPathEngine, entry, stratifier);
+    public static List<StratifierResult> evaluateStratifierOnResource(List<Measure.MeasureGroupStratifierComponent> stratifier,
+                                                                      FHIRPathEngine fhirPathEngine,
+                                                                      Resource resource,
+                                                                      Measure.MeasureGroupPopulationComponent initialPopulationCoding) {
+        return stratifier.stream().map(stratElem -> evaluateStratElemOnResource(fhirPathEngine, resource, stratElem, initialPopulationCoding))
+                .toList();
     }
 
-    private static Optional<StratifierResult> evaluateCoding(FHIRPathEngine fhirPathEngine,
-                                                             Bundle.BundleEntryComponent entry,
-                                                             Measure.MeasureGroupStratifierComponent stratifier) {
-        return stratifier.hasCriteria() ?
-                evaluateStratifierCriteria(fhirPathEngine, entry, stratifier) :
-                evaluateStratifierComponents(fhirPathEngine, entry, stratifier);
+    private static StratifierResult evaluateStratElemOnResource(FHIRPathEngine fhirPathEngine,
+                                                                Resource resource,
+                                                                Measure.MeasureGroupStratifierComponent stratElem,
+                                                                Measure.MeasureGroupPopulationComponent initialPopulationCoding) {
+        return stratElem.hasCriteria() ?
+                evaluateStratifierCriteria(fhirPathEngine, resource, stratElem, initialPopulationCoding) :
+                evaluateStratifierComponents(fhirPathEngine, resource, stratElem, initialPopulationCoding);
     }
 
-    private static Optional<StratifierResult> evaluateStratifierCriteria(FHIRPathEngine fhirPathEngine,
-                                                                         Bundle.BundleEntryComponent entry,
-                                                                         Measure.MeasureGroupStratifierComponent stratifier) {
-        try {
-            // TODO check for presence? like criteria.hasExpression()
-            return Optional.of(CodingResult.ofSingleKey(
-                    evaluateExpression(
-                            fhirPathEngine, entry, stratifier.getCode().getCodingFirstRep(),
-                            stratifier.getCriteria().getExpression())));
-        } catch (FHIRException e) {
-            // TODO error handling?
+    private static StratifierResult evaluateStratifierCriteria(FHIRPathEngine fhirPathEngine,
+                                                               Resource resource,
+                                                               Measure.MeasureGroupStratifierComponent stratElem,
+                                                               Measure.MeasureGroupPopulationComponent initialPopulationCoding) {
+
+        // TODO check for presence? like criteria.hasExpression()
+        return evaluateExpression(fhirPathEngine, resource, stratElem.getCode().getCodingFirstRep(), stratElem.getCriteria().getExpression())
+                .map(foundValue ->
+                        StratifierResult.ofSingleKeyPair(foundValue,
+                                PopulationsCount.ofInitialPopulation(initialPopulationCoding).evaluateOnResource(resource),
+                                HashableCoding.ofFhirCoding(stratElem.getCode().getCodingFirstRep())))
+                .orElse(StratifierResult.empty(HashableCoding.ofFhirCoding(stratElem.getCode().getCodingFirstRep())));
+    }
+
+    private static StratifierResult evaluateStratifierComponents(FHIRPathEngine fhirPathEngine,
+                                                                 Resource resource,
+                                                                 Measure.MeasureGroupStratifierComponent stratElem,
+                                                                 Measure.MeasureGroupPopulationComponent initialPopulationCoding) {
+        Optional<Set<ComponentKeyPair>> foundValues = stratElem.getComponent().stream()
+                .map(component ->
+                        evaluateExpression(fhirPathEngine, resource, component.getCode().getCodingFirstRep(),
+                                component.getCriteria().getExpression()))
+                .filter(Optional::isPresent).map(Optional::get)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toSet(),
+                        set -> set.size() == stratElem.getComponent().size() ? Optional.of(set) : Optional.empty()));
+
+        return foundValues.map(set ->
+                        StratifierResult.ofSingleSet(set,
+                                PopulationsCount.ofInitialPopulation(initialPopulationCoding).evaluateOnResource(resource),
+                                HashableCoding.ofFhirCoding(stratElem.getCode().getCodingFirstRep())))
+                .orElse(StratifierResult.empty(HashableCoding.ofFhirCoding(stratElem.getCode().getCodingFirstRep())));
+    }
+
+    private static Optional<ComponentKeyPair> evaluateExpression(FHIRPathEngine fhirPathEngine, Resource resource,
+                                                                 Coding stratCompCode, String fhirPath) throws FHIRException {
+        List<Base> found = fhirPathEngine.evaluate(resource, fhirPath);
+        if (found.isEmpty())
             return Optional.empty();
-        }
-    }
 
-    private static Optional<StratifierResult> evaluateStratifierComponents(FHIRPathEngine fhirPathEngine,
-                                                                           Bundle.BundleEntryComponent entry,
-                                                                           Measure.MeasureGroupStratifierComponent stratifier) {
-        return Optional.of(CodingResult.ofSingleSet(stratifier.getComponent().stream().map(
-                component -> evaluateExpression(fhirPathEngine, entry, component.getCode().getCodingFirstRep(),
-                        component.getCriteria().getExpression())).collect(Collectors.toSet())));
-    }
-
-    private static StratifierCodingKey evaluateExpression(FHIRPathEngine fhirPathEngine, Bundle.BundleEntryComponent entry,
-                                                          Coding stratCode, String fhirPath) throws FHIRException {
-        List<Base> found = fhirPathEngine.evaluate(entry.getResource(), fhirPath);
-        HashableCoding definitionCode = new HashableCoding(stratCode.getSystem(), stratCode.getCode());
-        Coding coding = (Coding) found.get(0);
-        HashableCoding valueCode = new HashableCoding(coding.getSystem(), coding.getCode());
-        return new StratifierCodingKey(definitionCode, valueCode);
+        HashableCoding definitionCode = HashableCoding.ofFhirCoding(stratCompCode);
+        Coding coding = (Coding) found.get(0); //TODO currently assuming this cast won't fail
+        HashableCoding valueCode = HashableCoding.ofFhirCoding(coding);
+        return Optional.of(new ComponentKeyPair(definitionCode, valueCode));
     }
 }
