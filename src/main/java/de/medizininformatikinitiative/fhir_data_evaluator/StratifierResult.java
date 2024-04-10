@@ -39,7 +39,7 @@ public record StratifierResult(Optional<Map<Set<ComponentKeyPair>, PopulationsCo
     public MeasureReport.MeasureReportGroupStratifierComponent toReport() {
 
         return new MeasureReport.MeasureReportGroupStratifierComponent()
-                .setCode(List.of(new CodeableConcept(stratifierCode.toFhirCoding())))
+                .setCode(List.of(new CodeableConcept(stratifierCode.toCoding())))
                 .setStratum(counts
                         .map(presentCounts -> presentCounts.entrySet().stream().map(this::entryToReport).toList())
                         .orElse(null));

@@ -1,9 +1,26 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.parser.IParser;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
+@Component
 public class DataStore {
+
+    private final WebClient client;
+    private final IParser parser;
+
+    public DataStore(WebClient client, IParser parser) {
+        this.client = client;
+        this.parser = parser;
+    }
+
 
     /**
      * Executes {@code populationQuery} and returns all resources found with that query.
@@ -12,7 +29,23 @@ public class DataStore {
      * @return the resources found with the {@code populationQuery}
      */
     public Flux<Resource> getPopulation(String populationQuery) {
-        // TODO
-        return Flux.empty();
+        return client.get()
+                .uri(populationQuery)
+                .retrieve()
+                .bodyToFlux(String.class)
+                .map(response -> parser.parseResource(Bundle.class, response))
+                .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
+                        .map(link -> fetchPage(client, link.getUrl()))
+                        .orElse(Mono.empty()))
+                .flatMap(bundle -> Flux.fromStream(bundle.getEntry().stream().map(Bundle.BundleEntryComponent::getResource)));
     }
+
+    private Mono<Bundle> fetchPage(WebClient client, String url) {
+        return client.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(response -> parser.parseResource(Bundle.class, response));
+    }
+
 }

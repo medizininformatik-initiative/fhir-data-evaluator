@@ -9,10 +9,6 @@ public record HashableCoding(String system, String code, String display) impleme
         return new HashableCoding(coding.getSystem(), coding.getCode(), coding.getDisplay());
     }
 
-    Coding toFhirCoding() {
-        return new Coding(system, code, display);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o)
