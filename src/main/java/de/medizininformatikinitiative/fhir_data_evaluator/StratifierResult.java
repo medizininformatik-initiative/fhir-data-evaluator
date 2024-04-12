@@ -27,8 +27,10 @@ public record StratifierResult(Optional<Map<Set<ComponentKeyPair>, PopulationsCo
 
     public StratifierResult merge(StratifierResult other) {
         return this.counts
-                .flatMap(thisCounts -> other.counts.map(otherCounts ->
-                        new StratifierResult(Optional.of(mergeMaps(thisCounts, otherCounts)), this.stratifierCode)))
+                .map(thisCounts -> other.counts
+                        .map(otherCounts ->
+                                new StratifierResult(Optional.of(mergeMaps(thisCounts, otherCounts)), this.stratifierCode))
+                        .orElse(this))
                 .orElse(other);
     }
 
