@@ -1,6 +1,7 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.parser.IParser;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.util.Optional;
 
 @Component
@@ -42,7 +44,7 @@ public class DataStore {
 
     private Mono<Bundle> fetchPage(WebClient client, String url) {
         return client.get()
-                .uri(url)
+                .uri(URI.create(url))
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(response -> parser.parseResource(Bundle.class, response));
