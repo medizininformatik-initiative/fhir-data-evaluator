@@ -26,6 +26,6 @@ public record HashableCoding(String system, String code, String display) impleme
 
     @Override
     public Coding toCoding() {
-        return new Coding().setSystem(system).setCode(code);
+        return new Coding().setSystem(system).setCode(code).setDisplay(display);
     }
 }

@@ -5,7 +5,26 @@ import org.hl7.fhir.r4.model.MeasureReport;
 
 import java.util.Objects;
 
+/**
+ * Represents a found value of a resource.
+ */
 public record ComponentKeyPair(ComponentKey definitionCode, ComponentKey valueCode) {
+
+    public static ComponentKeyPair ofFailedInvalidType(ComponentKey definitionCode) {
+        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-invalid-type", "Value of FHIR resource was not of type Coding"));
+    }
+
+    public static ComponentKeyPair ofFailedTooManyValues(ComponentKey definitionCode) {
+        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-too-many-values", "Expected one value, but found more"));
+    }
+
+    public static ComponentKeyPair ofFailedNoValueFound(ComponentKey definitionCode) {
+        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-no-value-found", "Expected one value, but found none"));
+    }
+
+    public static ComponentKeyPair ofFailedMissingFields(ComponentKey definitionCode) {
+        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-missing-fields", "Coding was missing system or code"));
+    }
 
     @Override
     public boolean equals(Object o) {

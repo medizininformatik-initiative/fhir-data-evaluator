@@ -6,6 +6,11 @@ import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
 
+/**
+ * Counts the populations of the Measure either on group-level or on stratifier-level.
+ * <p>
+ * Currently, the only accepted population is the Initial-Population.
+ */
 public record PopulationsCount(PopulationCount initialPopulation) {
 
     static public PopulationsCount ofInitialPopulation(Measure.MeasureGroupPopulationComponent populationComponent) {
@@ -27,7 +32,7 @@ public record PopulationsCount(PopulationCount initialPopulation) {
     }
 
     private PopulationsCount mergeInitialPopulation(PopulationsCount other) {
-        // TODO check codes? currently assuming this.initialPopulation.code is equal to other.initialPopulation.code
+        assert this.initialPopulation.code().equals(other.initialPopulation.code());
         return new PopulationsCount(new PopulationCount(this.initialPopulation.code(), this.initialPopulation.count() + other.initialPopulation.count()));
     }
 

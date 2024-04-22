@@ -3,7 +3,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -26,13 +25,12 @@ class CodingResultTest {
 
     @Test
     void testMergeSimple() {
-        StratifierResult result1 = new StratifierResult(Optional.of(Map.of(KEY_SET_1, new PopulationsCount(new PopulationCount(POPULATION_CODE, VALUE_1)))), STRTIFIER_CODE);
-        StratifierResult result2 = new StratifierResult(Optional.of(Map.of(KEY_SET_1, new PopulationsCount(new PopulationCount(POPULATION_CODE, VALUE_2)))), STRTIFIER_CODE);
+        StratifierResult result1 = new StratifierResult(Map.of(KEY_SET_1, new PopulationsCount(new PopulationCount(POPULATION_CODE, VALUE_1))), STRTIFIER_CODE);
+        StratifierResult result2 = new StratifierResult(Map.of(KEY_SET_1, new PopulationsCount(new PopulationCount(POPULATION_CODE, VALUE_2))), STRTIFIER_CODE);
 
         StratifierResult merged = result1.merge(result2);
 
-        assertThat(merged.counts()).isPresent();
-        assertThat(merged.counts().get().get(KEY_SET_1).initialPopulation().count()).isEqualTo(VALUE_1 + VALUE_2);
+        assertThat(merged.counts().get(KEY_SET_1).initialPopulation().count()).isEqualTo(VALUE_1 + VALUE_2);
     }
 
 }

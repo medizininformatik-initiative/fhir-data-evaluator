@@ -1,7 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.parser.IParser;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
 import org.springframework.stereotype.Component;
