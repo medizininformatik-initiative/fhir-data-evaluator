@@ -1,0 +1,19 @@
+services:
+  fhir-server:
+    image: "samply/blaze:0.22"
+    environment:
+      BASE_URL: "http://fhir-server:8080"
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+      LOG_LEVEL: "debug"
+    ports:
+      - "8082:8080"
+    volumes:
+      - "data-store-data:/app/data"
+    networks:
+      - testing-network
+
+volumes:
+  data-store-data:
+networks:
+    testing-network:
+      driver: bridge

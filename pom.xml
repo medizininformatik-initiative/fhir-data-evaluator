@@ -11,8 +11,8 @@
 	<groupId>de.medizininformatikinitiative</groupId>
 	<artifactId>fhir_data_evaluator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>fhir_data_evaluator</name>
-	<description>Demo project for Spring Boot</description>
+	<name>Fhir Data Evaluator</name>
+	<description>Fhir Data Evaluator</description>
 	<properties>
 		<java.version>17</java.version>
 		<spring-shell.version>3.2.2</spring-shell.version>
@@ -94,6 +94,7 @@
 	</dependencyManagement>
 
 	<build>
+		<finalName>fhir-data-evaluator</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

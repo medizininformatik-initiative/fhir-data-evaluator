@@ -7,13 +7,12 @@ import org.hl7.fhir.r4.context.IWorkerContext;
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 
 @SpringBootApplication
@@ -53,14 +53,14 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public WebClient webClient() {
+    public WebClient webClient(@Value("${fhir.server}")String fhirServer) throws Exception {
         ConnectionProvider provider = ConnectionProvider.builder("data-store")
                 .maxConnections(4)
                 .pendingAcquireMaxCount(500)
                 .build();
         HttpClient httpClient = HttpClient.create(provider);
         WebClient.Builder builder = WebClient.builder()
-                .baseUrl("http://localhost:8080/fhir")
+                .baseUrl(fhirServer)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader("Accept", "application/fhir+json");
 
@@ -72,65 +72,61 @@ public class FhirDataEvaluatorApplication {
         return System.out;
     }
 
-    public static void main(String[] args) {
-        SpringApplication app = new SpringApplication(FhirDataEvaluatorApplication.class);
-        app.setWebApplicationType(WebApplicationType.NONE);
-        app.run(args);
-    }
-
-}
-
-@Profile("!test")
-@Component
-class EvaluationStarter implements CommandLineRunner {
-
-    private final EvaluationCommand evaluationCommand;
-
-    @Autowired
-    public EvaluationStarter(EvaluationCommand evaluationCommand) {
-        this.evaluationCommand = evaluationCommand;
-    }
-
-    @Override
-    public void run(String... args) {
-        int exitCode = new CommandLine(evaluationCommand).execute(args);
-        System.exit(exitCode);
-    }
 }
 
 @Component
-@CommandLine.Command
-class EvaluationCommand implements Runnable {
-    private final MeasureEvaluator measureEvaluator;
-    private final IParser parser;
-    private final PrintStream outStream;
+class EvaluationExecutor implements InitializingBean {
 
-
-    @Autowired
-    public EvaluationCommand(MeasureEvaluator measureEvaluator, IParser parser, PrintStream outStream) {
-        this.measureEvaluator = measureEvaluator;
-        this.parser = parser;
-        this.outStream = outStream;
-    }
-
-    @CommandLine.Option(names = {"-mf", "--measure-file"}, required = true)
+    @Value("${measure-file}")
     private String measureFilePath;
+    private final MeasureEvaluator measureEvaluator;
+    private final PrintStream outStream;
+    private final IParser parser;
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, PrintStream outStream, IParser parser) {
+        this.measureEvaluator = measureEvaluator;
+        this.outStream = outStream;
+        this.parser = parser;
+    }
 
-
-    @Override
-    public void run() {
+    private String getMeasureFile() {
         String readMeasure;
         try {
             readMeasure = Files.readString(Path.of(measureFilePath));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        outStream.println(getMeasureReport(readMeasure));
+        return readMeasure;
     }
 
-    private String getMeasureReport(String measure) {
-        return parser.encodeResourceToString(measureEvaluator.evaluateMeasure(parser.parseResource(Measure.class, measure)).block());
+
+    @Override
+    public void afterPropertiesSet() {
+        String measureReport = parser.encodeResourceToString(measureEvaluator.evaluateMeasure(parser.parseResource(Measure.class, getMeasureFile())).block());
+        outStream.println(measureReport);
+    }
+}
+
+@CommandLine.Command
+class EvaluationCommand implements Runnable {
+
+    @CommandLine.Option(names = {"-mf", "--measure-file"}, required = true)
+    private String measureFilePath;
+    @CommandLine.Option(names = {"-s", "--fhir-server"}, required = true)
+    private String fhirServer;
+
+
+    @Override
+    public void run() {
+        System.setProperty("fhir.server", fhirServer);
+        System.setProperty("measure-file", measureFilePath);
+
+        SpringApplication app = new SpringApplication(FhirDataEvaluatorApplication.class);
+        app.setWebApplicationType(WebApplicationType.NONE);
+        app.run();
+    }
+
+    public static void main(String[] args) {
+        new CommandLine(new EvaluationCommand()).execute(args);
     }
 
 

@@ -1,0 +1,88 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - implement-base-functionality
+    tags:
+      - '*.*.*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Build
+        run: mvn -B verify
+
+      - name: Upload Jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: fhir-data-evaluator-jar
+          path: target/fhir-data-evaluator.jar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Export to Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          tags: fhir-data-evaluator:latest
+          outputs: type=docker,dest=/tmp/fhir-data-evaluator.tar
+
+      - name: Upload FhirDataEvaluator Image
+        uses: actions/upload-artifact@v3
+        with:
+          name: fhir-data-evaluator-image
+          path: /tmp/fhir-data-evaluator.tar
+
+  integration-test:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Blazectl
+        run: .github/scripts/install-blazectl.sh
+
+      - name: Download FhirDataEvaluator Image
+        uses: actions/download-artifact@v3
+        with:
+          name: fhir-data-evaluator-image
+          path: /tmp
+
+      - name: Load FhirDataEvaluator Image
+        run: docker load --input /tmp/fhir-data-evaluator.tar
+
+      - name: Run Blaze
+        run: docker-compose -f .github/integration-test/docker-compose.yml up -d
+
+      - name: Wait for Blaze
+        run: .github/scripts/wait-for-url.sh http://localhost:8082/health
+
+      - name: Load Data
+        run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/test-data
+
+      - name: Run Integration Test for ICD10
+        run: .github/integration-test/evaluate-icd10.sh /${PWD}/src/test/resources/example-measures/example-measure-1.json
+
+      - name: Run Integration Test for ICD10 to CSV
+        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/src/test/resources/example-measures/example-measure-1.json $PWD/.github/integration-test/
+
