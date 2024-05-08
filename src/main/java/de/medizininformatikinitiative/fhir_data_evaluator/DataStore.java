@@ -53,7 +53,6 @@ public class DataStore {
     }
 
     String appendPageCount(String query) {
-        System.out.println(pageCount);
         return query + "&_count=" + this.pageCount;
     }
 

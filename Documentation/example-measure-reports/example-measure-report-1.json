@@ -1,0 +1,60 @@
+{
+  "resourceType": "MeasureReport",
+  "group": [
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "count": 2
+        }
+      ],
+      "stratifier": [
+        {
+          "code": [
+            {
+              "coding": [
+                {
+                  "system": "http://fhir-evaluator/strat/system",
+                  "code": "icd10-code"
+                }
+              ]
+            }
+          ],
+          "stratum": [
+            {
+              "value": {
+                "coding": [
+                  {
+                    "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+                    "code": "I60.1",
+                    "display": "some display"
+                  }
+                ]
+              },
+              "population": [
+                {
+                  "code": {
+                    "coding": [
+                      {
+                        "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                        "code": "initial-population"
+                      }
+                    ]
+                  },
+                  "count": 2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

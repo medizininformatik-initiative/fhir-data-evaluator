@@ -3,6 +3,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -89,6 +90,11 @@ class MeasureEvaluatorIntegrationTest {
             dataImported = true;
         }
 
+    }
+
+    @BeforeAll
+    static void init() {
+        System.setProperty("fhir.pageCount", "10");
     }
 
     @Test

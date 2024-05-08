@@ -81,10 +81,10 @@ jobs:
         run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/test-data
 
       - name: Run Integration Test for ICD10
-        run: .github/integration-test/evaluate-icd10.sh /${PWD}/src/test/resources/example-measures/example-measure-1.json
+        run: .github/integration-test/evaluate-icd10.sh /${PWD}/.github/integration-test/icd10-measure.json
 
       - name: Run Integration Test for ICD10 to CSV
-        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/src/test/resources/example-measures/example-measure-1.json $PWD/.github/integration-test/
+        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/.github/integration-test/icd10-measure.json $PWD/.github/integration-test/
 
   push-image:
     needs:

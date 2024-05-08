@@ -1,0 +1,61 @@
+{
+  "resourceType": "Measure",
+  "id": "fdpg-plus-fhir-evaluator-example-measure",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/Measure"
+    ]
+  },
+  "identifier": [
+    {
+      "system": "https://medizininformatik-initiative.de/fdpg/fhir/Measure",
+      "value": "fhirEvaluator/v1"
+    }
+  ],
+  "version": "1.0",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "FHIR Evaluator example Measure Input",
+  "title": "FHIR Evaluator example Measure Input",
+  "description": "This measure defines the set of rule by which to extract information from the FHIR server",
+  "date": "2024-02-29",
+  "group": [
+    {
+      "basis": "Condition",
+      "description": "Simple Stratifier concept",
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+          }
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "icd10-code"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
