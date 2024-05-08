@@ -3,6 +3,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -16,10 +17,12 @@ public class DataStore {
 
     private final WebClient client;
     private final IParser parser;
+    private final int pageCount;
 
-    public DataStore(WebClient client, IParser parser) {
+    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}")int pageCount) {
         this.client = client;
         this.parser = parser;
+        this.pageCount = pageCount;
     }
 
 
@@ -31,7 +34,7 @@ public class DataStore {
      */
     public Flux<Resource> getPopulation(String populationQuery) {
         return client.get()
-                .uri(populationQuery)
+                .uri(appendPageCount(populationQuery))
                 .retrieve()
                 .bodyToFlux(String.class)
                 .map(response -> parser.parseResource(Bundle.class, response))
@@ -47,6 +50,11 @@ public class DataStore {
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(response -> parser.parseResource(Bundle.class, response));
+    }
+
+    String appendPageCount(String query) {
+        System.out.println(pageCount);
+        return query + "&_count=" + this.pageCount;
     }
 
 }

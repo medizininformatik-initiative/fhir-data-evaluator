@@ -33,7 +33,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @Testcontainers
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @ActiveProfiles("test")
-class MeasureEvaluatorIT {
+class MeasureEvaluatorIntegrationTest {
 
     public static final ComponentKeyPair I60 = new ComponentKeyPair(
             new HashableCoding("http://fhir-evaluator/strat/system", "icd10-code", "some-display"),
@@ -64,7 +64,7 @@ class MeasureEvaluatorIT {
     @Autowired
     private IParser parser;
 
-    private static final Logger logger = LoggerFactory.getLogger(MeasureEvaluatorIT.class);
+    private static final Logger logger = LoggerFactory.getLogger(MeasureEvaluatorIntegrationTest.class);
     private static boolean dataImported = false;
 
 
