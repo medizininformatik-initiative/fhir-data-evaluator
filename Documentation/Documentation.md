@@ -22,7 +22,8 @@ both at the same time. The code of a stratifier element can be a custom but uniq
 stratifier. If the stratifier element consists of components, it still must have a code. Each component also
 consists of a code and a criteria. A criteria consists of a language and an expression. As language, currently only
 `text/fhirpath` is accepted. Accordingly, the expression must be a FHIRPath statement. It must start at the base resource
-type and must evaluate into a coding, like `Condition.code.coding`.
+type and must evaluate into a coding, like `Condition.code.coding`. Multiple stratifier elements are evaluated separately
+and only share the same base group population.
 
 As currently only the population of type `initial-population` is supported, a stratifier element simply counts the
 occurrences of each coding found at the path defined in the criteria expression, or in case the stratifier consists of 

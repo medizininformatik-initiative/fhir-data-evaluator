@@ -1,8 +1,14 @@
 #!/bin/bash
 
 INPUT_MEASURE=$1
+BASE_OUTPUT_DIR=$PWD/.github/integration-test
 
-REPORT=$(docker run -v $INPUT_MEASURE:/app/input-measure.json -e FHIR_SERVER=http://fhir-server:8080/fhir --network integration-test_testing-network fhir-data-evaluator)
+today=$(date +"%Y-%m-%d")
+measureName=$(jq -c --raw-output '.name' $INPUT_MEASURE)
+OUTPUT_DIR=$BASE_OUTPUT_DIR/$today-$measureName
+
+docker run -v $INPUT_MEASURE:/app/measure.json -v $BASE_OUTPUT_DIR:/app/output/ -e FHIR_SERVER=http://fhir-server:8080/fhir --network integration-test_testing-network fhir-data-evaluator
+REPORT=$(cat $OUTPUT_DIR/measure-report.json)
 
 EXPECTED_POPULATION_COUNT=2
 EXPECTED_STRATIFIER_COUNT=2

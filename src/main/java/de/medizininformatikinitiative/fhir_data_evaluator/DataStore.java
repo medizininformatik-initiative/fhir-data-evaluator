@@ -19,7 +19,7 @@ public class DataStore {
     private final IParser parser;
     private final int pageCount;
 
-    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}")int pageCount) {
+    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount) {
         this.client = client;
         this.parser = parser;
         this.pageCount = pageCount;

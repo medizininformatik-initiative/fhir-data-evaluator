@@ -1,25 +1,19 @@
 {
   "resourceType": "Measure",
-  "id": "fdpg-plus-fhir-evaluator-example-measure",
   "meta": {
     "profile": [
       "http://hl7.org/fhir/StructureDefinition/Measure"
     ]
   },
-  "identifier": [
-    {
-      "system": "https://medizininformatik-initiative.de/fdpg/fhir/Measure",
-      "value": "fhirEvaluator/v1"
-    }
-  ],
   "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "FHIR Evaluator example Measure Input",
-  "title": "FHIR Evaluator example Measure Input",
-  "description": "This measure defines the set of rule by which to extract information from the FHIR server",
-  "date": "2024-02-29",
+  "name": "ExampleConditionSnomedWithStatus",
+  "title": "Example Condition Snomed with Status",
+  "description": "Example Measure to count all Snomed codes with clinical status.",
+  "date": "2024-05-10",
   "group": [
     {
       "basis": "Condition",

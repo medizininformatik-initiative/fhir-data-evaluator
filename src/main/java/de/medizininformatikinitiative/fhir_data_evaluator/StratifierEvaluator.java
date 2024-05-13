@@ -86,7 +86,7 @@ public class StratifierEvaluator {
             return ComponentKeyPair.ofFailedTooManyValues(definitionCode);
         if (!(found.get(0) instanceof Coding coding))
             return ComponentKeyPair.ofFailedInvalidType(definitionCode);
-        if(!coding.hasSystem() || !coding.hasCode())
+        if (!coding.hasSystem() || !coding.hasCode())
             return ComponentKeyPair.ofFailedMissingFields(definitionCode);
 
         HashableCoding valueCode = HashableCoding.ofFhirCoding(coding);

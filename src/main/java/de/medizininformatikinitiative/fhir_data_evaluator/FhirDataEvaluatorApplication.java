@@ -7,26 +7,26 @@ import org.hl7.fhir.r4.context.IWorkerContext;
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
-import picocli.CommandLine;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 
 @SpringBootApplication
@@ -55,45 +55,55 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public WebClient webClient(@Value("${fhir.server}")String fhirServer,
+    public WebClient webClient(@Value("${fhir.server}") String fhirServer,
                                @Value("${fhir.user}") String user,
                                @Value("${fhir.password}") String password,
                                @Value("${fhir.maxConnections}") int maxConnections,
-                               @Value("${fhir.maxQueueSize}") int maxQueueSize) throws Exception {
+                               @Value("${fhir.maxQueueSize}") int maxQueueSize,
+                               @Value("${fhir.bearerToken}") String bearerToken,
+                               @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib) {
         ConnectionProvider provider = ConnectionProvider.builder("data-store")
-                .maxConnections(4)
-                .pendingAcquireMaxCount(500)
+                .maxConnections(maxConnections)
+                .pendingAcquireMaxCount(maxQueueSize)
                 .build();
         HttpClient httpClient = HttpClient.create(provider);
         WebClient.Builder builder = WebClient.builder()
                 .baseUrl(fhirServer)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("Accept", "application/fhir+json");
+                .defaultHeader("Accept", "application/fhir+json")
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeMib * 1024 * 1024));
+        if (!bearerToken.isEmpty()) {
+            builder = builder.filter((request, next) -> {
+                ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
+                return next.exchange(newReq);});
+        }
         if (!user.isEmpty() && !password.isEmpty()) {
             builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
         }
         return builder.build();
     }
 
-    @Bean
-    public PrintStream outStream() {
-        return System.out;
+    public static void main(String[] args) {
+        SpringApplication app = new SpringApplication(FhirDataEvaluatorApplication.class);
+        app.setWebApplicationType(WebApplicationType.NONE);
+        app.run(args);
     }
 
 }
 
 @Component
 @Profile("!test")
-class EvaluationExecutor implements InitializingBean {
+class EvaluationExecutor implements CommandLineRunner {
 
     @Value("${measureFile}")
     private String measureFilePath;
+    @Value("${outputDir}")
+    private String outputDirectory;
     private final MeasureEvaluator measureEvaluator;
-    private final PrintStream outStream;
     private final IParser parser;
-    public EvaluationExecutor(MeasureEvaluator measureEvaluator, PrintStream outStream, IParser parser) {
+
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser) {
         this.measureEvaluator = measureEvaluator;
-        this.outStream = outStream;
         this.parser = parser;
     }
 
@@ -108,52 +118,19 @@ class EvaluationExecutor implements InitializingBean {
     }
 
 
-    @Override
-    public void afterPropertiesSet() {
-        String measureReport = parser.encodeResourceToString(measureEvaluator.evaluateMeasure(parser.parseResource(Measure.class, getMeasureFile())).block());
-        outStream.println(measureReport);
+    public void run(String... args) {
+        String measureFile = getMeasureFile();
+        Measure measure = parser.parseResource(Measure.class, measureFile);
+        String measureReport = parser.encodeResourceToString(measureEvaluator.evaluateMeasure(measure).block());
+
+        String directoryAddition = args[0];
+
+        try {
+            FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
+            fileWriter.write(measureReport);
+            fileWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
-
-@CommandLine.Command
-class EvaluationCommand implements Runnable {
-
-    @CommandLine.Option(names = {"-f", "--measure-file"}, required = true)
-    private String measureFilePath;
-    @CommandLine.Option(names = {"-s", "--fhir-server"}, required = true)
-    private String fhirServer;
-    @CommandLine.Option(names = {"--fhir-user"}, required = false)
-    private String fhirUser;
-    @CommandLine.Option(names = {"--fhir-password"}, required = false)
-    private String fhirPassword;
-    @CommandLine.Option(names = {"--fhir-max-connections"}, required = false)
-    private String fhirMaxConnections;
-    @CommandLine.Option(names = {"--fhir-max-queue-size"}, required = false)
-    private String fhirMaxQueueSize;
-
-
-    @Override
-    public void run() {
-        System.setProperty("measureFile", measureFilePath);
-        System.setProperty("fhir.server", fhirServer);
-        if(fhirUser != null)
-            System.setProperty("fhir.user", fhirUser);
-        if(fhirPassword != null)
-            System.setProperty("fhir.password", fhirPassword);
-        if(fhirMaxConnections != null)
-            System.setProperty("fhir.maxConnections", fhirMaxConnections);
-        if(fhirMaxQueueSize != null)
-            System.setProperty("fhir.maxQueueSize", fhirMaxQueueSize);
-
-        SpringApplication app = new SpringApplication(FhirDataEvaluatorApplication.class);
-        app.setWebApplicationType(WebApplicationType.NONE);
-        app.run();
-    }
-
-    public static void main(String[] args) {
-        new CommandLine(new EvaluationCommand()).execute(args);
-    }
-
-
-}
-

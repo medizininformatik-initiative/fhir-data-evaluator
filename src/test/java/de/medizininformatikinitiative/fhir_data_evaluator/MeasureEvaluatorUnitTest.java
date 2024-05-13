@@ -44,9 +44,9 @@ public class MeasureEvaluatorUnitTest {
         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                 .setStratifier(List.of(
                         new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
-                                new Measure.MeasureGroupStratifierComponentComponent()
-                                        .setCriteria(COND_CODE_PATH)
-                                        .setCode(new CodeableConcept(COND_DEF_CODING))))
+                                        new Measure.MeasureGroupStratifierComponentComponent()
+                                                .setCriteria(COND_CODE_PATH)
+                                                .setCode(new CodeableConcept(COND_DEF_CODING))))
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation()));
         Measure measure = new Measure().setGroup(List.of(measureGroup));
@@ -89,6 +89,7 @@ public class MeasureEvaluatorUnitTest {
         assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getComponent().get(1).getCode(), STATUS_DEF_SYSTEM, STATUS_DEF_CODE);
         assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getComponent().get(1).getValue(), STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE);
     }
+
     @Test
     void twoGroups_sameStratifier() {
         when(dataStore.getPopulation("/" + POPULATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
