@@ -46,6 +46,7 @@ docker run -v <your/measurefile.json>:/app/input-measure.json -v <your/output/di
 | FHIR_MAX_CONNECTIONS   | 4                          | The maximum number of connections to open towards the FHIR server.          |
 | FHIR_MAX_QUEUE_SIZE    | 500                        | The maximum number FHIR server requests to queue before returning an error. |
 | FHIR_PAGE_COUNT        | 1000                       | The number of resources per page to request from the FHIR server.           |
+| FHIR_BEARER_TOKEN      |                            | Bearer token for authentication.                                            |
 | MAX_IN_MEMORY_SIZE_MIB | 10                         | The maximum in-memory buffer size for the webclient in MiB.                 |
 | GENERATE_CSV           | false                      | Whether for the MeasureReport should be generated CSV files.                |
 
