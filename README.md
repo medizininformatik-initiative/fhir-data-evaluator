@@ -16,16 +16,22 @@ An example of a Measure can be found [here](Documentation/example-measures/examp
 
 ### MeasureReport as Output only:
 ```sh
-docker run -v <your/measurefile.json>:/app/input-measure.json -v <your/output/dir>:/app/output -e FHIR_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
 ```
 ### MeasureReport and CSV Output:
 
 ```sh
-docker run -v <your/measurefile.json>:/app/input-measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
 ```
 * this generates a CSV file for each Stratifier and stores the files in a directory named after the current date combined 
 with the Measure's name
 * if this is run multiple times on the same day, it will override the files
+
+### Usage with Docker Networks
+* to any of the listed docker run commands add ```--network <your_network>``` to run the container inside a Docker network
+```sh
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> --network <your_network> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
+```
 
 ### Passing Additional Environment Variables:
 
@@ -33,7 +39,7 @@ The environment variables are used inside the docker container, so if they are s
 be visible in the container. Each additional environment variable can be passed using the `-e` flag.
 * Example of passing a page count of 50:
 ```sh
-docker run -v <your/measurefile.json>:/app/input-measure.json -v <your/output/dir>:/app/output -e FHIR_SERVER=<http://your-fhir-server/fhir> -e FHIR_PAGE_COUNT=50 -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SERVER=<http://your-fhir-server/fhir> -e FHIR_PAGE_COUNT=50 -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
 ```
 
 ## Environment Variables
