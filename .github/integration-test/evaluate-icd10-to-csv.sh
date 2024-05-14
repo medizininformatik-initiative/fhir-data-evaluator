@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 INPUT_MEASURE=$1
 BASE_OUTPUT_DIR=$PWD/.github/integration-test
