@@ -8,7 +8,6 @@ fi
 outputDir="$1"
 report="${outputDir}/measure-report.json"
 
-group_counter=0
 jq -c '.group[]' "$report" | while IFS= read -r group; do
     echo "$group" | jq -c '.stratifier[]' | while IFS= read -r stratifier; do
       strat_code=$(echo "$stratifier" | jq --raw-output '.code[0].coding[0].code')
@@ -29,5 +28,4 @@ jq -c '.group[]' "$report" | while IFS= read -r group; do
 
       echo "${result}" > "$filename"
     done
-    ((group_counter++))
 done

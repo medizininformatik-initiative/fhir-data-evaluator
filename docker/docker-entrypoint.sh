@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-today=$(date +"%Y-%m-%d")
+today=$(date +"%Y-%m-%d_%H-%M-%S")
 measureName="$(jq -c --raw-output '.name' /app/measure.json)"
 outputDir="$today-$measureName"
 mkdir -p /app/output/"$outputDir"

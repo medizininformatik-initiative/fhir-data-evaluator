@@ -3,7 +3,7 @@
 INPUT_MEASURE=$1
 BASE_OUTPUT_DIR=$PWD/.github/integration-test
 
-today=$(date +"%Y-%m-%d")
+today=$(date +"%Y-%m-%d_%H-%M-%S")
 measureName=$(jq -c --raw-output '.name' "$INPUT_MEASURE")
 OUTPUT_DIR=$BASE_OUTPUT_DIR/$today-$measureName
 
