@@ -9,5 +9,5 @@ cp /app/measure.json /app/output/"$outputDir"/measure.json
 java -jar fhir-data-evaluator.jar "$outputDir"
 
 if [ "${CONVERT_TO_CSV}" = true ]; then
-  /app/csv-converter.sh /app/output/"$outputDir"
+  bash /app/csv-converter.sh /app/output/"$outputDir"
 fi
