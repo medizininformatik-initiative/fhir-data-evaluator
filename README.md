@@ -33,6 +33,14 @@ with the Measure's name
 docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> --network <your_network> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
 ```
 
+### Time Zones
+When generating the CSV files from the MeasureReport, the files will be saved in a directory named after the current date
+combined with the Measure's name. Since it is run inside a Docker container, the time zone might differ from the one on
+the host machine. If you want to match the time zones, add for example ```-e TZ=Europe/Berlin```:
+```sh
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
+```
+
 ### Passing Additional Environment Variables:
 
 The environment variables are used inside the docker container, so if they are set only on the host machine, they won't
@@ -40,14 +48,6 @@ be visible in the container. Each additional environment variable can be passed 
 * Example of passing a page count of 50:
 ```sh
 docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SERVER=<http://your-fhir-server/fhir> -e FHIR_PAGE_COUNT=50 -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
-```
-
-### Time Zones
-When generating the CSV files from the MeasureReport, the files will be saved in a directory named after the current date 
-combined with the Measure's name. Since it is run inside a Docker container, the time zone might differ from the one on 
-the host machine. If you want to match the time zones, add for example ```-e TZ=Europe/Berlin```:
-```sh
-docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:latest
 ```
 
 ## Environment Variables

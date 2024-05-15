@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/bin/bash -e
 
 INPUT_MEASURE=$1
-BASE_OUTPUT_DIR=$PWD/.github/integration-test
-
-today=$(date +"%Y-%m-%d_%H-%M-%S")
-measureName=$(jq -c --raw-output '.name' "$INPUT_MEASURE")
-OUTPUT_DIR=$BASE_OUTPUT_DIR/$today-$measureName
+BASE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-icd10-test-to-csv-test
+mkdir "$BASE_OUTPUT_DIR"
 
 docker run -v "$INPUT_MEASURE":/app/measure.json -v "$BASE_OUTPUT_DIR":/app/output/ -e FHIR_SERVER=http://fhir-server:8080/fhir \
-       -e CONVERT_TO_CSV=true --network integration-test_testing-network fhir-data-evaluator
+       -e CONVERT_TO_CSV=true -e TZ="$(cat /etc/timezone)" --network integration-test_testing-network fhir-data-evaluator
+
+today=$(date +"%Y-%m-%d")
+OUTPUT_DIR=$(find "$BASE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
 
 #wait for csv file creation
 sleep 1

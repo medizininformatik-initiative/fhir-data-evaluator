@@ -1,14 +1,14 @@
 #!/bin/bash -e
 
 INPUT_MEASURE=$1
-BASE_OUTPUT_DIR=$PWD/.github/integration-test
-
-today=$(date +"%Y-%m-%d_%H-%M-%S")
-measureName=$(jq -c --raw-output '.name' "$INPUT_MEASURE")
-OUTPUT_DIR=$BASE_OUTPUT_DIR/$today-$measureName
+BASE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-icd10-test
+mkdir "$BASE_OUTPUT_DIR"
 
 docker run -v "$INPUT_MEASURE":/app/measure.json -v "$BASE_OUTPUT_DIR":/app/output/ -e FHIR_SERVER=http://fhir-server:8080/fhir \
-      --network integration-test_testing-network fhir-data-evaluator
+      -e TZ="$(cat /etc/timezone)" --network integration-test_testing-network fhir-data-evaluator
+
+today=$(date +"%Y-%m-%d")
+OUTPUT_DIR=$(find "$BASE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
 REPORT=$(cat "$OUTPUT_DIR"/measure-report.json)
 
 EXPECTED_POPULATION_COUNT=2
