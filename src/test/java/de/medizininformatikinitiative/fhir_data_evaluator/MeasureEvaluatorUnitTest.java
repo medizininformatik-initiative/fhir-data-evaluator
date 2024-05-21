@@ -50,7 +50,7 @@ public class MeasureEvaluatorUnitTest {
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation()));
         Measure measure = new Measure().setGroup(List.of(measureGroup));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
+        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine, 1);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -77,7 +77,7 @@ public class MeasureEvaluatorUnitTest {
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation()));
         Measure measure = new Measure().setGroup(List.of(measureGroup));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
+        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine, 1);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -104,7 +104,7 @@ public class MeasureEvaluatorUnitTest {
                         new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation()));
         Measure measure = new Measure().setGroup(List.of(measureGroup_1, measureGroup_2));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
+        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine, 1);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 

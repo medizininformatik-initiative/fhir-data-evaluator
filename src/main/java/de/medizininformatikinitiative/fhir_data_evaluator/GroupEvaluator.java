@@ -29,10 +29,11 @@ public class GroupEvaluator {
                 getInitialPopulation(group).getCriteria().getExpressionElement().toString());
         Measure.MeasureGroupPopulationComponent initialPopulationDefinition = group.getPopulation().get(0);
 
+        List<ParsedStratifier> stratElements = group.getStratifier().stream().map(fhirStratifier -> ParsedStratifier.fromFhirStratifier(fhirStratifier, fhirPathEngine)).toList();
         return population.map(resource ->
                         new GroupResult(
                                 PopulationsCount.ofInitialPopulation(initialPopulationDefinition).evaluateOnResource(resource),
-                                StratifierEvaluator.evaluateStratifierOnResource(group.getStratifier(), fhirPathEngine, resource, initialPopulationDefinition)))
+                                stratElements.stream().map(stratElem -> stratElem.evaluateOnResource(resource, initialPopulationDefinition, fhirPathEngine)).toList()))
                 .reduce(GroupResult::merge);
     }
 

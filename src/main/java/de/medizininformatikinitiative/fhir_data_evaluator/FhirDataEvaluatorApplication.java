@@ -5,7 +5,10 @@ import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.context.IWorkerContext;
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
+import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Measure;
+import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -27,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 
 @SpringBootApplication
@@ -50,8 +54,8 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public MeasureEvaluator measureEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine) {
-        return new MeasureEvaluator(dataStore, fhirPathEngine);
+    public MeasureEvaluator measureEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine,  @Value("${groupThreadCount}") int groupThreadCount) {
+        return new MeasureEvaluator(dataStore, fhirPathEngine, groupThreadCount);
     }
 
     @Bean
@@ -101,6 +105,11 @@ class EvaluationExecutor implements CommandLineRunner {
     private String outputDirectory;
     private final MeasureEvaluator measureEvaluator;
     private final IParser parser;
+    private final double NANOS_IN_SECOND = 1_000_000_000.0;
+    private final Quantity durationQuantity = new Quantity()
+            .setCode("s")
+            .setSystem("http://unitsofmeasure.org")
+            .setUnit("u");
 
     public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser) {
         this.measureEvaluator = measureEvaluator;
@@ -121,13 +130,20 @@ class EvaluationExecutor implements CommandLineRunner {
     public void run(String... args) {
         String measureFile = getMeasureFile();
         Measure measure = parser.parseResource(Measure.class, measureFile);
-        String measureReport = parser.encodeResourceToString(measureEvaluator.evaluateMeasure(measure).block());
+
+        long startTime = System.nanoTime();
+        MeasureReport measureReport = measureEvaluator.evaluateMeasure(measure).block();
+        double evaluationDuration = (double)(System.nanoTime() - startTime) / NANOS_IN_SECOND;
+        assert measureReport != null;
+        measureReport.addExtension(new Extension()
+                .setUrl("http://fhir-evaluator/StructureDefinition/eval-duration")
+                .setValue(durationQuantity.setValue(evaluationDuration)));
 
         String directoryAddition = args[0];
 
         try {
             FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
-            fileWriter.write(measureReport);
+            fileWriter.write(parser.encodeResourceToString(measureReport));
             fileWriter.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
