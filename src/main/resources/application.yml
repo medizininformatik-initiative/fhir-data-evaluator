@@ -9,4 +9,3 @@ fhir:
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: '/app/measure.json'
 outputDir: '/app/output/'
-groupThreadCount: ${GROUP_THREAD_COUNT:1}

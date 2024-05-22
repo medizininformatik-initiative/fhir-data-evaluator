@@ -54,8 +54,8 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public MeasureEvaluator measureEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine,  @Value("${groupThreadCount}") int groupThreadCount) {
-        return new MeasureEvaluator(dataStore, fhirPathEngine, groupThreadCount);
+    public MeasureEvaluator measureEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine) {
+        return new MeasureEvaluator(dataStore, fhirPathEngine);
     }
 
     @Bean

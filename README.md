@@ -63,7 +63,6 @@ docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/ap
 | FHIR_BEARER_TOKEN      |                            | Bearer token for authentication.                                                       |
 | MAX_IN_MEMORY_SIZE_MIB | 10                         | The maximum in-memory buffer size for the webclient in MiB.                            |
 | GENERATE_CSV           | false                      | Whether for the MeasureReport should be generated CSV files.                           |
-| GROUP_THREAD_COUNT     | 1                          | The amount of pooled threads used to evaluate the groups from the Measure in parallel. |
 
 
 ## Documentation
