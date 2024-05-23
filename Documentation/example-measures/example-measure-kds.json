@@ -142,7 +142,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Observation.interpretation"
+            "expression": "Observation.interpretation.coding.where(system='http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation')"
           },
           "code": {
             "coding": [
@@ -205,41 +205,6 @@
       ]
     },
     {
-      "basis": "MedicationStatement",
-      "population": [
-        {
-          "code": {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
-                "code": "initial-population"
-              }
-            ]
-          },
-          "criteria": {
-            "language": "text/x-fhir-query",
-            "expression": "MedicationStatement?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement"
-          }
-        }
-      ],
-      "stratifier": [
-        {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "MedicationStatement.medication.reference"
-          },
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-evaluator/strat/system",
-                "code": "medication-ref"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
       "basis": "Consent",
       "population": [
         {
@@ -275,69 +240,6 @@
       ]
     },
     {
-      "basis": "Observation",
-      "population": [
-        {
-          "code": {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
-                "code": "initial-population"
-              }
-            ]
-          },
-          "criteria": {
-            "language": "text/x-fhir-query",
-            "expression": "Consent?_profile=https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/parameter-von-beatmung"
-          }
-        }
-      ],
-      "stratifier": [
-        {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Observation.code.coding.where(system='http://loinc.org')"
-          },
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-evaluator/strat/system",
-                "code": "observation-icu-beatmung-loinc-code"
-              }
-            ]
-          }
-        },
-        {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Observation.code.coding.where(system='http://snomed.info/sct')"
-          },
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-evaluator/strat/system",
-                "code": "observation-icu-beatmung-sct-code"
-              }
-            ]
-          }
-        },
-        {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Observation.code.coding.where(system='urn:iso:std:iso:11073:10101')"
-          },
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-evaluator/strat/system",
-                "code": "observation-icu-beatmung-IEEE-11073-code"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
       "basis": "Specimen",
       "population": [
         {
@@ -359,7 +261,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Specimen.type.where(system='http://snomed.info/sct')"
+            "expression": "Specimen.type.coding.where(system='http://snomed.info/sct')"
           },
           "code": {
             "coding": [
@@ -373,7 +275,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "pecimen.collection.bodySite.coding.where(system='http://snomed.info/sct')"
+            "expression": "Specimen.collection.bodySite.coding.where(system='http://snomed.info/sct')"
           },
           "code": {
             "coding": [
@@ -387,7 +289,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Specimen.type.where(system='http://terminology.hl7.org/CodeSystem/icd-o-3')"
+            "expression": "Specimen.collection.bodySite.coding.where(system='http://terminology.hl7.org/CodeSystem/icd-o-3')"
           },
           "code": {
             "coding": [
