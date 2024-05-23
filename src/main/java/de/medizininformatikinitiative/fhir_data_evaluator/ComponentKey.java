@@ -1,5 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 
 /**
@@ -11,4 +12,6 @@ import org.hl7.fhir.r4.model.Coding;
 public interface ComponentKey {
 
     Coding toCoding();
+
+    CodeableConcept toCodeableConcept();
 }

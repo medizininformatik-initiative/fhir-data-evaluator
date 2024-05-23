@@ -1,10 +1,10 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
-import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
+
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
 
 /**
  * Counts the populations of the Measure either on group-level or on stratifier-level.
@@ -12,28 +12,16 @@ import java.util.List;
  * Currently, the only accepted population is the Initial-Population.
  */
 public record PopulationsCount(PopulationCount initialPopulation) {
+    public static final PopulationsCount INITIAL_ONE = new PopulationsCount(new PopulationCount(INITIAL_POPULATION_CODING, 1));
+    public static final PopulationsCount INITIAL_ZERO = new PopulationsCount(new PopulationCount(INITIAL_POPULATION_CODING, 0));
 
-    static public PopulationsCount ofInitialPopulation(Measure.MeasureGroupPopulationComponent populationComponent) {
-        return new PopulationsCount(new PopulationCount(HashableCoding.ofFhirCoding(populationComponent.getCode().getCodingFirstRep()), 0));
-    }
 
-    public PopulationsCount evaluateOnResource(Resource resource) {
-        return evaluateInitialPopulation(resource);
-    }
-
-    private PopulationsCount evaluateInitialPopulation(Resource resource) {
-        return resource == null ?
-                new PopulationsCount(new PopulationCount(this.initialPopulation().code(), 0)) :
-                new PopulationsCount(new PopulationCount(this.initialPopulation().code(), 1));
+    public PopulationsCount increaseCount() {
+        return new PopulationsCount(new PopulationCount(this.initialPopulation().code(), initialPopulation().count() + 1));
     }
 
     public PopulationsCount merge(PopulationsCount other) {
-        return mergeInitialPopulation(other);
-    }
-
-    private PopulationsCount mergeInitialPopulation(PopulationsCount other) {
-        assert this.initialPopulation.code().equals(other.initialPopulation.code());
-        return new PopulationsCount(new PopulationCount(this.initialPopulation.code(), this.initialPopulation.count() + other.initialPopulation.count()));
+        return new PopulationsCount(initialPopulation.merge(other.initialPopulation));
     }
 
     public List<MeasureReport.StratifierGroupPopulationComponent> toReportStratifierPopulations() {

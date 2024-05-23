@@ -30,7 +30,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 
 @SpringBootApplication
@@ -79,7 +78,8 @@ public class FhirDataEvaluatorApplication {
         if (!bearerToken.isEmpty()) {
             builder = builder.filter((request, next) -> {
                 ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
-                return next.exchange(newReq);});
+                return next.exchange(newReq);
+            });
         }
         if (!user.isEmpty() && !password.isEmpty()) {
             builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
@@ -133,7 +133,7 @@ class EvaluationExecutor implements CommandLineRunner {
 
         long startTime = System.nanoTime();
         MeasureReport measureReport = measureEvaluator.evaluateMeasure(measure).block();
-        double evaluationDuration = (double)(System.nanoTime() - startTime) / NANOS_IN_SECOND;
+        double evaluationDuration = (double) (System.nanoTime() - startTime) / NANOS_IN_SECOND;
         assert measureReport != null;
         measureReport.addExtension(new Extension()
                 .setUrl("http://fhir-evaluator/StructureDefinition/eval-duration")

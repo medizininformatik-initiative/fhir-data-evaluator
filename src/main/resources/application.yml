@@ -7,5 +7,5 @@ fhir:
   pageCount: ${FHIR_PAGE_COUNT:1000}
   bearerToken: ${FHIR_BEARER_TOKEN:''}
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
-measureFile: '/app/measure.json'
-outputDir: '/app/output/'
+measureFile: ${MEASURE_FILE:/app/measure.json}
+outputDir: ${OUTPUT_DIR:/app/output/}

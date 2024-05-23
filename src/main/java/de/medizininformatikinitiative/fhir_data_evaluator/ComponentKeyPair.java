@@ -1,29 +1,31 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.MeasureReport;
 
 import java.util.Objects;
 
 /**
  * Represents a found value of a resource.
+ *
+ * @param definitionCode the code of the stratifier component
+ * @param valueCode the value found in the resource
  */
 public record ComponentKeyPair(ComponentKey definitionCode, ComponentKey valueCode) {
 
     public static ComponentKeyPair ofFailedInvalidType(ComponentKey definitionCode) {
-        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-invalid-type", "Value of FHIR resource was not of type Coding"));
+        return new ComponentKeyPair(definitionCode, HashableCoding.FAIL_INVALID_TYPE);
     }
 
     public static ComponentKeyPair ofFailedTooManyValues(ComponentKey definitionCode) {
-        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-too-many-values", "Expected one value, but found more"));
+        return new ComponentKeyPair(definitionCode, HashableCoding.FAIL_TOO_MANY_VALUES);
     }
 
     public static ComponentKeyPair ofFailedNoValueFound(ComponentKey definitionCode) {
-        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-no-value-found", "Expected one value, but found none"));
+        return new ComponentKeyPair(definitionCode, HashableCoding.FAIL_NO_VALUE_FOUND);
     }
 
     public static ComponentKeyPair ofFailedMissingFields(ComponentKey definitionCode) {
-        return new ComponentKeyPair(definitionCode, new HashableCoding("http://fhir-evaluator/strat/system", "fail-missing-fields", "Coding was missing system or code"));
+        return new ComponentKeyPair(definitionCode, HashableCoding.FAIL_MISSING_FIELDS);
     }
 
     @Override
@@ -43,8 +45,8 @@ public record ComponentKeyPair(ComponentKey definitionCode, ComponentKey valueCo
 
     public MeasureReport.StratifierGroupComponentComponent toReport() {
         return new MeasureReport.StratifierGroupComponentComponent()
-                .setCode(new CodeableConcept(definitionCode.toCoding()))
-                .setValue(new CodeableConcept(valueCode.toCoding()));
+                .setCode(definitionCode.toCodeableConcept())
+                .setValue(valueCode.toCodeableConcept());
     }
 
 }
