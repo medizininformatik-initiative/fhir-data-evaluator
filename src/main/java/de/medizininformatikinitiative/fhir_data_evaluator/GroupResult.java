@@ -9,17 +9,22 @@ import java.util.stream.IntStream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Holds {@link PopulationsCount} and {@link StratifierResult}s of one group.
+ * Holds {@link Populations} and {@link StratifierResult}s of one group.
  *
  * @param populationsCount the count of all resources of the group without any stratification
  * @param stratifierResults holds the results of each stratifier
  */
-public record GroupResult(PopulationsCount populationsCount, List<StratifierResult> stratifierResults) {
+public record GroupResult(Populations populationsCount, List<StratifierResult> stratifierResults) {
 
 
     public GroupResult {
         requireNonNull(populationsCount);
         stratifierResults = List.copyOf(stratifierResults);
+    }
+
+
+    public static GroupResult initial(List<StratifierResult> emtpyStratifierResults) {
+        return new GroupResult(Populations.INITIAL_ZERO, emtpyStratifierResults);
     }
 
     public GroupResult applyResource(List<StratifierReduceOp> stratifierOperations, Resource resource) {

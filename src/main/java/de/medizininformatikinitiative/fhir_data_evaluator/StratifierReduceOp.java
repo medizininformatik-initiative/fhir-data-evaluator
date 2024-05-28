@@ -10,6 +10,12 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a reduce operation for one stratifier that consists of one or more components.
+ * <p>
+ * This operation evaluates each component of the {@code parsedStratifier} and mutates a {@link StratifierResult} to add
+ * the evaluated StratumComponents.
+ */
 public record StratifierReduceOp(FHIRPathEngine fhirPathEngine,
                                  ParsedStratifier parsedStratifier) implements BiFunction<StratifierResult, Resource, StratifierResult> {
     @Override
@@ -18,23 +24,23 @@ public record StratifierReduceOp(FHIRPathEngine fhirPathEngine,
         return s;
     }
 
-    private Set<ComponentKeyPair> evaluateStratifier(Resource resource) {
+    private Set<StratumComponent> evaluateStratifier(Resource resource) {
         return parsedStratifier.componentExpressions().stream().map(e -> evaluateExpression(resource, e)).collect(Collectors.toSet());
     }
 
-    private ComponentKeyPair evaluateExpression(Resource resource, ComponentExpression c) {
+    private StratumComponent evaluateExpression(Resource resource, ComponentExpression c) {
         List<Base> found = fhirPathEngine.evaluate(resource, c.pathExpression());
 
         if (found.isEmpty())
-            return ComponentKeyPair.ofFailedNoValueFound(c.coding());
+            return StratumComponent.ofFailedNoValueFound(c.coding());
         if (found.size() > 1)
-            return ComponentKeyPair.ofFailedTooManyValues(c.coding());
+            return StratumComponent.ofFailedTooManyValues(c.coding());
         if (!(found.get(0) instanceof Coding coding))
-            return ComponentKeyPair.ofFailedInvalidType(c.coding());
+            return StratumComponent.ofFailedInvalidType(c.coding());
         if (!coding.hasSystem() || !coding.hasCode())
-            return ComponentKeyPair.ofFailedMissingFields(c.coding());
+            return StratumComponent.ofFailedMissingFields(c.coding());
 
         HashableCoding valueCode = HashableCoding.ofFhirCoding(coding);
-        return new ComponentKeyPair(c.coding(), valueCode);
+        return new StratumComponent(c.coding(), valueCode);
     }
 }

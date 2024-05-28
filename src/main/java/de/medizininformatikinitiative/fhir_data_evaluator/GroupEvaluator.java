@@ -26,13 +26,13 @@ public class GroupEvaluator {
     public Mono<GroupResult> evaluateGroup(Measure.MeasureGroupComponent group) {
         var initialPopulation = getInitialPopulation(group);
         var population = dataStore.getPopulation("/" +
-                initialPopulation.getCriteria().getExpressionElement().toString());
+                initialPopulation.getCriteria().getExpressionElement());
 
         var parsedStratifiers = group.getStratifier().stream().map(fhirStratifier -> ParsedStratifier.fromFhirStratifier(fhirStratifier, fhirPathEngine)).toList();
         var groupReduceOp = new GroupReduceOp(parsedStratifiers.stream().map(s -> new StratifierReduceOp(fhirPathEngine, s)).toList());
         var emtpyStratifierResults = parsedStratifiers.stream().map(s -> new StratifierResult(s.coding(), new HashMap<>())).toList();
 
-        return population.reduce(new GroupResult(PopulationsCount.INITIAL_ZERO, emtpyStratifierResults), groupReduceOp);
+        return population.reduce(GroupResult.initial(emtpyStratifierResults), groupReduceOp);
     }
 
     private Measure.MeasureGroupPopulationComponent getInitialPopulation(Measure.MeasureGroupComponent group) {
