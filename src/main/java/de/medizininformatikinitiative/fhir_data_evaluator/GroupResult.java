@@ -11,24 +11,23 @@ import static java.util.Objects.requireNonNull;
 /**
  * Holds {@link Populations} and {@link StratifierResult}s of one group.
  *
- * @param populationsCount the count of all resources of the group without any stratification
+ * @param populations       the count of all resources of the group without any stratification
  * @param stratifierResults holds the results of each stratifier
  */
-public record GroupResult(Populations populationsCount, List<StratifierResult> stratifierResults) {
-
+public record GroupResult(Populations populations, List<StratifierResult> stratifierResults) {
 
     public GroupResult {
-        requireNonNull(populationsCount);
+        requireNonNull(populations);
         stratifierResults = List.copyOf(stratifierResults);
     }
 
-
-    public static GroupResult initial(List<StratifierResult> emtpyStratifierResults) {
-        return new GroupResult(Populations.INITIAL_ZERO, emtpyStratifierResults);
+    public static GroupResult initial(List<HashableCoding> stratifierCodes) {
+        return new GroupResult(Populations.ZERO, stratifierCodes.stream().map(StratifierResult::initial).toList());
     }
 
     public GroupResult applyResource(List<StratifierReduceOp> stratifierOperations, Resource resource) {
-        return new GroupResult(populationsCount.increaseCount(), applyEachStratifier(stratifierOperations, resource));
+        assert stratifierResults.size() == stratifierOperations.size();
+        return new GroupResult(populations.increaseCounts(), applyEachStratifier(stratifierOperations, resource));
     }
 
     /**
@@ -41,8 +40,7 @@ public record GroupResult(Populations populationsCount, List<StratifierResult> s
 
     public MeasureReport.MeasureReportGroupComponent toReportGroup() {
         return new MeasureReport.MeasureReportGroupComponent()
-                .setPopulation(populationsCount.toReportGroupPopulations())
-                .setStratifier(stratifierResults.stream().map(StratifierResult::toReport).toList());
+                .setPopulation(populations.toReportGroupPopulations())
+                .setStratifier(stratifierResults.stream().map(StratifierResult::toReportGroupStratifier).toList());
     }
-
 }

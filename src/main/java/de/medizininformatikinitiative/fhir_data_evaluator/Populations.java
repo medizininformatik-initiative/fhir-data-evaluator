@@ -4,31 +4,37 @@ import org.hl7.fhir.r4.model.MeasureReport;
 
 import java.util.List;
 
-import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Counts the populations of a group either on group-level or on stratifier-level.
+ * Represents possibly multiple populations either on group or on stratifier level.
  * <p>
- * Currently, the only accepted population is the Initial-Population.
+ * Currently, the only accepted population is the {@link InitialPopulation}.
+ *
+ * @param initialPopulation the initial population
  */
 public record Populations(InitialPopulation initialPopulation) {
-    public static final Populations INITIAL_ONE = new Populations(new InitialPopulation(1));
-    public static final Populations INITIAL_ZERO = new Populations(new InitialPopulation(0));
 
+    public static final Populations ZERO = new Populations(InitialPopulation.ZERO);
+    public static final Populations ONE = new Populations(InitialPopulation.ONE);
 
-    public Populations increaseCount() {
-        return new Populations(new InitialPopulation(initialPopulation().count() + 1));
+    public Populations {
+        requireNonNull(initialPopulation);
+    }
+
+    public Populations increaseCounts() {
+        return new Populations(initialPopulation.increaseCount());
     }
 
     public Populations merge(Populations other) {
         return new Populations(initialPopulation.merge(other.initialPopulation));
     }
 
-    public List<MeasureReport.StratifierGroupPopulationComponent> toReportStratifierPopulations() {
-        return List.of(initialPopulation.toReportStratifierPopulation());
-    }
-
     public List<MeasureReport.MeasureReportGroupPopulationComponent> toReportGroupPopulations() {
         return List.of(initialPopulation.toReportGroupPopulation());
+    }
+
+    public List<MeasureReport.StratifierGroupPopulationComponent> toReportStratifierPopulations() {
+        return List.of(initialPopulation.toReportStratifierPopulation());
     }
 }
