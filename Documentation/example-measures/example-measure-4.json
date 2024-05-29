@@ -40,7 +40,7 @@
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "observation-value-code"
               }
             ]
           },

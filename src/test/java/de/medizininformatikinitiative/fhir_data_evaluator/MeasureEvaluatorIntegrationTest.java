@@ -36,10 +36,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @ActiveProfiles("test")
 class MeasureEvaluatorIntegrationTest {
 
-    public static final ComponentKeyPair I60 = new ComponentKeyPair(
+    public static final StratumComponent I60 = new StratumComponent(
             new HashableCoding("http://fhir-evaluator/strat/system", "icd10-code", "some-display"),
             new HashableCoding("http://fhir.de/CodeSystem/bfarm/icd-10-gm", "I60.1", "some-display"));
-    public static final ComponentKeyPair ACTIVE = new ComponentKeyPair(
+    public static final StratumComponent ACTIVE = new StratumComponent(
             new HashableCoding("http://fhir-evaluator/strat/system", "condition-clinical-status", "some-display"),
             new HashableCoding("http://terminology.hl7.org/CodeSystem/condition-clinical", "active", "some-display"));
 
@@ -123,15 +123,15 @@ class MeasureEvaluatorIntegrationTest {
         return Files.readString(Path.of(measurePath));
     }
 
-    private MeasureReport.StratifierGroupComponent getStratumByKey(List<MeasureReport.StratifierGroupComponent> strati, Set<ComponentKeyPair> keySet) {
+    private MeasureReport.StratifierGroupComponent getStratumByKey(List<MeasureReport.StratifierGroupComponent> strati, Set<StratumComponent> keySet) {
         for (MeasureReport.StratifierGroupComponent stratum : strati) {
             if (stratum.hasValue()) {
-                if (HashableCoding.ofFhirCoding(stratum.getValue().getCodingFirstRep()).equals(keySet.iterator().next().valueCode())) {
+                if (HashableCoding.ofFhirCoding(stratum.getValue().getCodingFirstRep()).equals(keySet.iterator().next().value())) {
                     return stratum;
                 }
             } else {
                 if (stratum.getComponent().stream().map(component ->
-                                new ComponentKeyPair(
+                                new StratumComponent(
                                         HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
                                         HashableCoding.ofFhirCoding(component.getValue().getCodingFirstRep()))).collect(Collectors.toSet()).
                         equals(keySet)) {
