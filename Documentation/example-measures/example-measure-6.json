@@ -12,7 +12,7 @@
   "publisher": "FDPG-Plus",
   "name": "ExampleConditionSnomedWithStatus",
   "title": "Example Condition Snomed with Status",
-  "description": "Example Measure to count all Snomed codes with clinical status.",
+  "description": "Example Measure to count codings in different FHIR resource types.",
   "date": "2024-05-10",
   "group": [
     {
@@ -86,7 +86,6 @@
       ]
     },
     {
-      "basis": "Procedure",
       "population": [
         {
           "code": {

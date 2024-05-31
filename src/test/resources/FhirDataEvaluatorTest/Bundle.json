@@ -3201,6 +3201,81 @@
         "method": "POST",
         "url": "Condition/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
       }
+    },
+    {
+      "resource" : {
+        "resourceType": "Observation",
+        "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ]
+        },
+        "valueQuantity": {
+          "comparator" : ">",
+          "value": 7.2,
+          "unit": "g/dl",
+          "system": "http://unitsofmeasure.org",
+          "code": "g/dL"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ]
+        },
+        "valueQuantity": {
+          "comparator" : ">",
+          "value": 20.3,
+          "unit": "ng/mL",
+          "system": "http://unitsofmeasure.org",
+          "code": "ng/mL"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
+      }
+    },
+    {
+        "resource": {
+          "resourceType": "Observation",
+          "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "718-7",
+                "display": "Hemoglobin [Mass/volume] in Blood"
+              }
+            ]
+          },
+        "request": {
+          "method": "POST",
+          "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
+      }
     }
   ]
 }

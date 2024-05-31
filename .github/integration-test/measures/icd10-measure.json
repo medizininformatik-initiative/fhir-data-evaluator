@@ -12,7 +12,7 @@
   "publisher": "FDPG-Plus",
   "name": "ExampleConditionIcd10",
   "title": "Example Condition Icd10",
-  "description": "Example Measure to count all ICD-10 codes.",
+  "description": "Example Measure to extract all ICD-10 code counts.",
   "date": "2024-05-10",
   "group": [
     {

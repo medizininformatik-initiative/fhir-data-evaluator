@@ -12,11 +12,10 @@
   "publisher": "FDPG-Plus",
   "name": "ExampleConditionSnomedAndStatusSeparate",
   "title": "Example Condition Snomed and Status separate",
-  "description": "Example Measure to separately count all Snomed codes and clinical status.",
+  "description": "Example Measure to separately count all Snomed codes and the combination of Snomed code and clinical status.",
   "date": "2024-05-10",
   "group": [
     {
-      "basis": "Condition",
       "description": "Simple Stratifier concept",
       "population": [
         {

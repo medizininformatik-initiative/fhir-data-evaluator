@@ -5,6 +5,7 @@ import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,22 @@ class MeasureEvaluatorIntegrationTest {
     public static final StratumComponent ACTIVE = new StratumComponent(
             new HashableCoding("http://fhir-evaluator/strat/system", "condition-clinical-status", "some-display"),
             new HashableCoding("http://terminology.hl7.org/CodeSystem/condition-clinical", "active", "some-display"));
+
+    static final StratumComponent G_DL = new StratumComponent(
+            new HashableCoding("http://fhir-evaluator/strat/system", "observation-value-code", "some-display"),
+            HashableCoding.ofSingleCodeValue("g/dL"));
+    static final StratumComponent NG_ML = new StratumComponent(
+            new HashableCoding("http://fhir-evaluator/strat/system", "observation-value-code", "some-display"),
+            HashableCoding.ofSingleCodeValue("ng/mL"));
+    static final StratumComponent COMPARATOR_GT = new StratumComponent(
+            new HashableCoding("http://fhir-evaluator/strat/system", "observation-value-comparator", "some-display"),
+            HashableCoding.ofSingleCodeValue(">"));
+    static final StratumComponent EXISTS_TRUE = new StratumComponent(
+            new HashableCoding("http://fhir-evaluator/strat/system", "observation-value-code-exists", "some-display"),
+            HashableCoding.ofSingleCodeValue("true"));
+    static final StratumComponent EXISTS_FALSE = new StratumComponent(
+            new HashableCoding("http://fhir-evaluator/strat/system", "observation-value-code-exists", "some-display"),
+            HashableCoding.ofSingleCodeValue("false"));
 
     @TestConfiguration
     static class Config {
@@ -98,24 +115,67 @@ class MeasureEvaluatorIntegrationTest {
     }
 
     @Test
+    @DisplayName("Test Condition with single criteria")
     public void test_measure_1() throws IOException {
         var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/measure-1.json"));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
-        assertThat(getStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60))
+        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60))
                 .getPopulation().get(0).getCount())
                 .isEqualTo(100);
     }
 
     @Test
+    @DisplayName("Test Condition with components")
     public void test_measure_2() throws IOException {
         var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/measure-2.json"));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
-        assertThat(getStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60, ACTIVE))
+        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60, ACTIVE))
                 .getPopulation().get(0).getCount())
                 .isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("Test Observation value code of type CodeType")
+    public void test_measure_3_1() throws IOException {
+        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/measure-3-1.json"));
+
+        var reportResult = measureEvaluator.evaluateMeasure(measure).block();
+
+        assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(G_DL))
+                .getPopulation().get(0).getCount())
+                .isEqualTo(1);
+        assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(NG_ML))
+                .getPopulation().get(0).getCount())
+                .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Test Observation value code of type Enumeration")
+    public void test_measure_3_2() throws IOException {
+        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/measure-3-2.json"));
+
+        var reportResult = measureEvaluator.evaluateMeasure(measure).block();
+
+        assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(COMPARATOR_GT))
+                .getPopulation().get(0).getCount())
+                .isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Test Observation value exists")
+    public void test_measure_4() throws IOException {
+        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/measure-4.json"));
+
+        var reportResult = measureEvaluator.evaluateMeasure(measure).block();
+        assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(EXISTS_TRUE))
+                .getPopulation().get(0).getCount())
+                .isEqualTo(2);
+        assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(EXISTS_FALSE))
+                .getPopulation().get(0).getCount())
+                .isEqualTo(1);
     }
 
 
@@ -123,7 +183,7 @@ class MeasureEvaluatorIntegrationTest {
         return Files.readString(Path.of(measurePath));
     }
 
-    private MeasureReport.StratifierGroupComponent getStratumByKey(List<MeasureReport.StratifierGroupComponent> strati, Set<StratumComponent> keySet) {
+    private MeasureReport.StratifierGroupComponent getCodingStratumByKey(List<MeasureReport.StratifierGroupComponent> strati, Set<StratumComponent> keySet) {
         for (MeasureReport.StratifierGroupComponent stratum : strati) {
             if (stratum.hasValue()) {
                 if (HashableCoding.ofFhirCoding(stratum.getValue().getCodingFirstRep()).equals(keySet.iterator().next().value())) {
@@ -134,6 +194,25 @@ class MeasureEvaluatorIntegrationTest {
                                 new StratumComponent(
                                         HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
                                         HashableCoding.ofFhirCoding(component.getValue().getCodingFirstRep()))).collect(Collectors.toSet()).
+                        equals(keySet)) {
+                    return stratum;
+                }
+            }
+        }
+        return null;
+    }
+
+    private MeasureReport.StratifierGroupComponent getCodeStratumByKey(List<MeasureReport.StratifierGroupComponent> strati, Set<StratumComponent> keySet) {
+        for (MeasureReport.StratifierGroupComponent stratum : strati) {
+            if (stratum.hasValue()) {
+                if (HashableCoding.ofSingleCodeValue(stratum.getValue().getCodingFirstRep().getCode()).equals(keySet.iterator().next().value())) {
+                    return stratum;
+                }
+            } else {
+                if (stratum.getComponent().stream().map(component ->
+                                new StratumComponent(
+                                        HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
+                                        HashableCoding.ofSingleCodeValue(component.getValue().getCodingFirstRep().getCode()))).collect(Collectors.toSet()).
                         equals(keySet)) {
                     return stratum;
                 }

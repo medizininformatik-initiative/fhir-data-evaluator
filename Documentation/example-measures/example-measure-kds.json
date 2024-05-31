@@ -16,7 +16,6 @@
   "date": "2024-05-10",
   "group": [
     {
-      "basis": "Condition",
       "population": [
         {
           "code": {
@@ -107,7 +106,7 @@
       ]
     },
     {
-      "basis": "Observation",
+
       "population": [
         {
           "code": {
@@ -156,7 +155,7 @@
       ]
     },
     {
-      "basis": "Procedure",
+
       "population": [
         {
           "code": {
@@ -205,7 +204,7 @@
       ]
     },
     {
-      "basis": "Consent",
+
       "population": [
         {
           "code": {
@@ -240,7 +239,7 @@
       ]
     },
     {
-      "basis": "Specimen",
+
       "population": [
         {
           "code": {

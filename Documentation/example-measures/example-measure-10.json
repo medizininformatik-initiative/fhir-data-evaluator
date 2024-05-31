@@ -6,13 +6,13 @@
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleObservationValue",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "ExampleConditionIcd10",
-  "title": "Example Condition Icd10",
-  "description": "Example Measure to count all ICD-10 codes.",
+  "name": "ExampleObservationValue",
+  "title": "Example Observation Value",
+  "description": "Example Measure to count value codes in Observations.",
   "date": "2024-05-10",
   "group": [
     {
@@ -29,23 +29,23 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Observation"
           }
         }
       ],
       "stratifier": [
         {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
-          },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "observation-value-code"
               }
             ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.value.code"
           }
         }
       ]
