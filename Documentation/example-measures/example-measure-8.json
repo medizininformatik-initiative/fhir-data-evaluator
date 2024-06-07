@@ -6,13 +6,13 @@
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "ExampleConditionIcd10",
-  "title": "Example Condition Icd10",
-  "description": "Example Measure to count all ICD-10 codes.",
+  "name": "ExampleConditionSnomedAndStatusSeparate",
+  "title": "Example Condition Snomed and Status separate",
+  "description": "Example Measure to count if code in Conditions exists.",
   "date": "2024-05-10",
   "group": [
     {
@@ -29,7 +29,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
           }
         }
       ],
@@ -37,13 +37,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+            "expression": "Condition.code.exists()"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "condition-code-exists"
               }
             ]
           }

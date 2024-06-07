@@ -14,24 +14,36 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Observation"
           }
         }
       ],
       "stratifier": [
         {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
-          },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "observation-value-code-exists"
               }
             ]
-          }
+          },
+          "component": [
+            {
+              "criteria": {
+                "language": "text/fhirpath",
+                "expression": "Observation.value.code.exists()"
+              },
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://fhir-evaluator/strat/system",
+                    "code": "value-code-exists"
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     }

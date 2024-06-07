@@ -61,14 +61,47 @@ public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding 
             return StratumComponent.ofFailedTooManyValues(code);
         }
 
-        if (!(found.get(0) instanceof Coding coding)) {
-            return StratumComponent.ofFailedInvalidType(code);
+        if (found.get(0) instanceof Coding coding) {
+            return evaluateCoding(coding);
         }
 
-        if (!coding.hasSystem() || !coding.hasCode()) {
-            return StratumComponent.ofFailedMissingFields(code);
+        if (found.get(0) instanceof Enumeration<?> valueCodeEnumeration) {
+            return evaluateCodeEnumeration(valueCodeEnumeration);
         }
 
-        return new StratumComponent(code, HashableCoding.ofFhirCoding(coding));
+        if (found.get(0) instanceof CodeType valueCode) {
+            return evaluateCode(valueCode);
+        }
+
+        if (found.get(0) instanceof BooleanType bool) {
+            return evaluateBoolean(bool);
+        }
+
+        return StratumComponent.ofFailedInvalidType(code);
+    }
+
+    private StratumComponent evaluateCoding(Coding coding) {
+
+        return  (coding.hasSystem() && coding.hasCode()) ?
+                new StratumComponent(code, HashableCoding.ofFhirCoding(coding)) :
+                StratumComponent.ofFailedMissingFields(code);
+    }
+
+    private StratumComponent evaluateCodeEnumeration(Enumeration<?> valueCode) {
+        return valueCode.hasCode() ?
+                new StratumComponent(code, HashableCoding.ofSingleCodeValue(valueCode.getCode())) :
+                StratumComponent.ofFailedMissingFields(code);
+    }
+
+    private StratumComponent evaluateCode(CodeType valueCode) {
+        return valueCode.hasCode() ?
+                new StratumComponent(code, HashableCoding.ofSingleCodeValue(valueCode.getCode())) :
+                StratumComponent.ofFailedMissingFields(code);
+    }
+
+    private StratumComponent evaluateBoolean(BooleanType bool) {
+        return bool.hasValue() ?
+                new StratumComponent(code, HashableCoding.ofSingleCodeValue(bool.getValueAsString())) :
+                StratumComponent.ofFailedMissingFields(code);
     }
 }

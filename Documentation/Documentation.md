@@ -22,12 +22,17 @@ both at the same time. The code of a stratifier element can be a custom but uniq
 stratifier. If the stratifier element consists of components, it still must have a code. Each component also
 consists of a code and a criteria. A criteria consists of a language and an expression. As language, currently only
 `text/fhirpath` is accepted. Accordingly, the expression must be a FHIRPath statement. It must start at the base resource
-type and must evaluate into a coding, like `Condition.code.coding`. Multiple stratifier elements are evaluated separately
+type and must evaluate into one of the following types: 
+* [Coding](https://www.hl7.org/fhir/datatypes.html#Coding), example: `Condition.code.coding` 
+* [boolean](https://www.hl7.org/fhir/datatypes.html#boolean), example: `Condition.code.exists()` 
+* [code](https://www.hl7.org/fhir/datatypes.html#code), example: `Patient.gender` 
+
+Multiple stratifier elements are evaluated separately
 and only share the same base group population.
 
 As currently only the population of type `initial-population` is supported, a stratifier element simply counts the
-occurrences of each coding found at the path defined in the criteria expression, or in case the stratifier consists of 
-components, each unique found *set* of codings.
+occurrences of each value found at the path defined in the criteria expression, or in case the stratifier consists of 
+components, each unique found *set* of values.
 
 * Example with a [single criteria](example-measures/example-measure-1.json)
 * Example with [components](example-measures/example-measure-3.json)
@@ -36,9 +41,9 @@ components, each unique found *set* of codings.
 ## MeasureReport
 
 Each group of the Measure results in a corresponding group in the MeasureReport. Also, each stratifier element in the
-Measure results in a corresponding stratifier element in the MeasureReport. Each found coding of a stratifier element,
-or in case the stratifier consists of components, each unique found *set* of codings results in a stratum element.
+Measure results in a corresponding stratifier element in the MeasureReport. Each found value of a stratifier element,
+or in case the stratifier consists of components, each unique found *set* of values results in a stratum element.
 The population of the group indicates the overall count of the found resources. The population of a stratum element 
-indicates the count of the found coding/ set of codings.
+indicates the count of the found values/ set of values.
 
 * Example [MeasureReport](example-measure-reports/example-measure-report-1.json)

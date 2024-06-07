@@ -6,17 +6,16 @@
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "ExampleConditionIcd10",
-  "title": "Example Condition Icd10",
-  "description": "Example Measure to extract all ICD-10 code counts.",
+  "name": "ExampleConditionSnomedAndStatusSeparate",
+  "title": "Example Condition Snomed and Status separate",
+  "description": "Example Measure to count gender codes.",
   "date": "2024-05-10",
   "group": [
     {
-      "basis": "Condition",
       "description": "Simple Stratifier concept",
       "population": [
         {
@@ -30,7 +29,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Patient"
           }
         }
       ],
@@ -38,13 +37,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+            "expression": "Patient.gender"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "gender"
               }
             ]
           }

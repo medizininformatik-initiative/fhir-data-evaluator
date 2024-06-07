@@ -2,7 +2,6 @@
   "resourceType": "Measure",
   "group": [
     {
-      "basis": "Condition",
       "population": [
         {
           "code": {
