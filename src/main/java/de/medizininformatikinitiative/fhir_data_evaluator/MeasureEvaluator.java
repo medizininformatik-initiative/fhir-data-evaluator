@@ -19,7 +19,7 @@ public class MeasureEvaluator {
 
     public Mono<MeasureReport> evaluateMeasure(Measure measure) {
         return Flux.fromStream(measure.getGroup().stream()).parallel().runOn(SCHEDULER).flatMap(groupEvaluator::evaluateGroup)
-                .map(GroupResult::toReportGroup).sequential().collectList()
+                .sequential().collectList()
                 .map(measureReportGroup -> new MeasureReport().setGroup(measureReportGroup));
     }
 }

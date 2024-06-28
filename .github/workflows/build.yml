@@ -110,7 +110,7 @@ jobs:
         run: docker load --input /tmp/fhir-data-evaluator.tar
 
       - name: Run Blaze
-        run: docker-compose -f .github/integration-test/docker-compose.yml up -d
+        run: docker compose -f .github/integration-test/docker-compose.yml up -d
 
       - name: Wait for Blaze
         run: .github/scripts/wait-for-url.sh http://localhost:8082/health

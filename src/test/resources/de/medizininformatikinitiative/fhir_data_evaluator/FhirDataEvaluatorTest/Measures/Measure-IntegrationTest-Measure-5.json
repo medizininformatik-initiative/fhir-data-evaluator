@@ -1,0 +1,95 @@
+{
+  "resourceType": "Measure",
+  "id": "IntegrationTest-Measure-5",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorContinuousVariableMeasure"
+    ]
+  },
+  "group": [
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+          },
+          "id": "initial-population-identifier"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition"
+          },
+          "id": "measure-population-identifier"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier"
+            }
+          ],
+          "id": "measure-observation-identifier"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+          },
+          "code": {
+            "coding": [
+              {
+                "code": "icd10-code",
+                "system": "http://fhir-data-evaluator/strat/system"
+              }
+            ]
+          },
+          "id": "strat-1"
+        }
+      ],
+      "id": "group-1"
+    }
+  ],
+  "status": "active",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10AndPatCount",
+  "version": "1.0",
+  "name": "ExampleConditionIcd10AndPatCount",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "description": "Example Measure to count all ICD-10 codes and the patient count."
+}

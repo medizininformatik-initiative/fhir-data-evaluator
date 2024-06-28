@@ -5,6 +5,7 @@ import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,10 +21,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MeasureEvaluatorUnitTest {
 
-    static final FHIRPathEngine pathEngine = createPathEngine();
-
     @Mock
     DataStore dataStore;
+    FHIRPathEngine pathEngine;
+    MeasureEvaluator measureEvaluator;
+
+    @BeforeEach
+    void setUp() {
+        pathEngine = createPathEngine();
+        measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
+    }
 
     private void assertCodeableConcept(CodeableConcept was, String expectedSystem, String expectedCode) {
         assertThat(was.getCodingFirstRep().getSystem()).isEqualTo(expectedSystem);
@@ -32,12 +39,12 @@ public class MeasureEvaluatorUnitTest {
 
     private void assertInitialPopulation(MeasureReport.MeasureReportGroupPopulationComponent reportPopulation) {
         assertThat(reportPopulation.getCount()).isEqualTo(1);
-        assertCodeableConcept(reportPopulation.getCode(), INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
+        assertCodeableConcept(reportPopulation.getCode(), POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
     }
 
     private void assertInitialPopulation(MeasureReport.StratifierGroupPopulationComponent reportPopulation) {
         assertThat(reportPopulation.getCount()).isEqualTo(1);
-        assertCodeableConcept(reportPopulation.getCode(), INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
+        assertCodeableConcept(reportPopulation.getCode(), POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
     }
 
     @Test
@@ -52,7 +59,6 @@ public class MeasureEvaluatorUnitTest {
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
         Measure measure = new Measure().setGroup(List.of(measureGroup));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -75,11 +81,10 @@ public class MeasureEvaluatorUnitTest {
                                                 .setCode(new CodeableConcept(COND_DEF_CODING)),
                                         new Measure.MeasureGroupStratifierComponentComponent()
                                                 .setCriteria(COND_STATUS_PATH)
-                                                .setCode(new CodeableConcept(STATUS_DEF_CODING))))
+                                                .setCode(new CodeableConcept(STATUS_DEF_CODING.toCoding()))))
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
         Measure measure = new Measure().setGroup(List.of(measureGroup));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -105,7 +110,6 @@ public class MeasureEvaluatorUnitTest {
                         new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
         Measure measure = new Measure().setGroup(List.of(measureGroup_1, measureGroup_2));
-        MeasureEvaluator measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
 
         var result = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -118,5 +122,4 @@ public class MeasureEvaluatorUnitTest {
         assertCodeableConcept(result.getGroup().get(1).getStratifier().get(0).getCode().get(0), COND_DEF_SYSTEM, COND_DEF_CODE);
         assertCodeableConcept(result.getGroup().get(1).getStratifier().get(0).getStratum().get(0).getValue(), COND_VALUE_SYSTEM, COND_VALUE_CODE);
     }
-
 }
