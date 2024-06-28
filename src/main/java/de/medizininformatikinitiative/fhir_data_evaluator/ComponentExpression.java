@@ -10,16 +10,14 @@ import static java.util.Objects.requireNonNull;
 /**
  * Holds a {@link HashableCoding} and a pre-parsed FHIRPath {@link ExpressionNode} of a single stratifier component.
  *
- * @param fhirPathEngine the engine used to evaluate the expression
- * @param code           the component code
- * @param expression     the expression to extract the stratum value
+ * @param code       the component code
+ * @param expression the expression to extract the stratum value
  */
-public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding code, ExpressionNode expression) {
+public record ComponentExpression(HashableCoding code, ExpressionNode expression) {
 
     private static final String STRATIFIER_LANGUAGE = "text/fhirpath";
 
     public ComponentExpression {
-        requireNonNull(fhirPathEngine);
         requireNonNull(code);
         requireNonNull(expression);
     }
@@ -30,7 +28,6 @@ public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding 
         }
 
         return new ComponentExpression(
-                fhirPathEngine,
                 HashableCoding.ofFhirCoding(fhirStratifier.getCode().getCodingFirstRep()),
                 fhirPathEngine.parse(fhirStratifier.getCriteria().getExpression()));
     }
@@ -45,12 +42,11 @@ public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding 
         }
 
         return new ComponentExpression(
-                fhirPathEngine,
                 HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
                 fhirPathEngine.parse(component.getCriteria().getExpression()));
     }
 
-    public StratumComponent evaluate(Resource resource) {
+    public StratumComponent evaluate(FHIRPathEngine fhirPathEngine, Resource resource) {
         List<Base> found = fhirPathEngine.evaluate(resource, expression);
 
         if (found.isEmpty()) {

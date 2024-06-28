@@ -1,7 +1,9 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
+import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -21,13 +23,14 @@ public record GroupResult(Populations populations, List<StratifierResult> strati
         stratifierResults = List.copyOf(stratifierResults);
     }
 
-    public static GroupResult initial(List<StratifierResult> initialResults) {
-        return new GroupResult(Populations.ZERO, initialResults);
+    public static GroupResult initial(List<StratifierResult> initialResults, Populations populations) {
+        return new GroupResult(populations, initialResults);
     }
 
-    public GroupResult applyResource(List<StratifierReduceOp> stratifierOperations, Resource resource) {
+    public GroupResult applyResource(FHIRPathEngine fhirPathEngine, List<StratifierReduceOp> stratifierOperations, Resource resource, Populations populationsTemplate) {
         assert stratifierResults.size() == stratifierOperations.size();
-        return new GroupResult(populations.increaseCounts(), applyEachStratifier(stratifierOperations, resource));
+        var newPopulation = populations.merge(populationsTemplate.copy().evaluatePopulations(fhirPathEngine, resource));
+        return new GroupResult(newPopulation, applyEachStratifier(stratifierOperations, resource));
     }
 
     /**
@@ -39,8 +42,12 @@ public record GroupResult(Populations populations, List<StratifierResult> strati
     }
 
     public MeasureReport.MeasureReportGroupComponent toReportGroup() {
-        return new MeasureReport.MeasureReportGroupComponent()
+        var group = new MeasureReport.MeasureReportGroupComponent()
                 .setPopulation(populations.toReportGroupPopulations())
                 .setStratifier(stratifierResults.stream().map(StratifierResult::toReportGroupStratifier).toList());
+
+        populations.observationPopulation().ifPresent(op -> group.setMeasureScore(new Quantity(op.aggregateMethod().getScore())));
+
+        return group;
     }
 }
