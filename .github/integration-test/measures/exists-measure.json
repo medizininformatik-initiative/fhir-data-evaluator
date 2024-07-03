@@ -6,7 +6,7 @@
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExistsMeasure",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",

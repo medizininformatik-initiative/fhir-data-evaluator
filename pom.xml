@@ -100,6 +100,31 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<id>copy-integration-test-measures</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>src/test/resources/FhirDataEvaluatorTest/Measures</outputDirectory>
+							<resources>
+								<resource>
+									<directory>shorthand/FhirDataEvaluatorIG/fsh-generated/resources</directory>
+									<includes>
+										<include>Measure-IntegrationTest-Measure-*.json</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
