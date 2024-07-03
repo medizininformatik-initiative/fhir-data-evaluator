@@ -2,7 +2,7 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
   "version": "1.0",
@@ -30,7 +30,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
-          }
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
@@ -46,7 +47,8 @@
                 "code": "icd10-code"
               }
             ]
-          }
+          },
+          "id": "strat-1"
         }
       ]
     }

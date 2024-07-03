@@ -3203,7 +3203,7 @@
       }
     },
     {
-      "resource" : {
+      "resource": {
         "resourceType": "Observation",
         "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
         "code": {
@@ -3216,7 +3216,7 @@
           ]
         },
         "valueQuantity": {
-          "comparator" : ">",
+          "comparator": ">",
           "value": 7.2,
           "unit": "g/dl",
           "system": "http://unitsofmeasure.org",
@@ -3242,7 +3242,7 @@
           ]
         },
         "valueQuantity": {
-          "comparator" : ">",
+          "comparator": ">",
           "value": 20.3,
           "unit": "ng/mL",
           "system": "http://unitsofmeasure.org",
@@ -3255,18 +3255,18 @@
       }
     },
     {
-        "resource": {
-          "resourceType": "Observation",
-          "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
-          "code": {
-            "coding": [
-              {
-                "system": "http://loinc.org",
-                "code": "718-7",
-                "display": "Hemoglobin [Mass/volume] in Blood"
-              }
-            ]
-          },
+      "resource": {
+        "resourceType": "Observation",
+        "id": "18c097fd-4263-8f4e-4307-f21ed5b01bcd",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ]
+        },
         "request": {
           "method": "POST",
           "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"

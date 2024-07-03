@@ -2,7 +2,7 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
   "version": "1.0",
@@ -30,19 +30,12 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          }
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
         {
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-evaluator/strat/system",
-                "code": "snomed-code-and-status"
-              }
-            ]
-          },
           "component": [
             {
               "criteria": {
@@ -72,7 +65,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "id": "strat-1"
         }
       ]
     }

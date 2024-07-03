@@ -2,7 +2,7 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
   "version": "1.0",
@@ -29,7 +29,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
-          }
+          },
+          "id": "initial-population-identifier-1"
         }
       ],
       "stratifier": [
@@ -45,7 +46,8 @@
                 "code": "condition-icd10-code"
               }
             ]
-          }
+          },
+          "id": "strat-1"
         },
         {
           "criteria": {
@@ -59,7 +61,8 @@
                 "code": "condition-sct-code"
               }
             ]
-          }
+          },
+          "id": "strat-2"
         },
         {
           "criteria": {
@@ -73,7 +76,8 @@
                 "code": "condition-alhpaid-code"
               }
             ]
-          }
+          },
+          "id": "strat-3"
         },
         {
           "criteria": {
@@ -87,7 +91,8 @@
                 "code": "condition-orphanet-code"
               }
             ]
-          }
+          },
+          "id": "strat-4"
         },
         {
           "criteria": {
@@ -101,7 +106,8 @@
                 "code": "condition-icdo3-code"
               }
             ]
-          }
+          },
+          "id": "strat-5"
         }
       ]
     },
@@ -120,7 +126,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Observation?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
-          }
+          },
+          "id": "initial-population-identifier-2"
         }
       ],
       "stratifier": [
@@ -136,7 +143,8 @@
                 "code": "observation-lab-loinc-code"
               }
             ]
-          }
+          },
+          "id": "strat-6"
         },
         {
           "criteria": {
@@ -150,7 +158,8 @@
                 "code": "observation-lab-interpretation"
               }
             ]
-          }
+          },
+          "id": "strat-7"
         }
       ]
     },
@@ -169,7 +178,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Procedure?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
-          }
+          },
+          "id": "initial-population-identifier-3"
         }
       ],
       "stratifier": [
@@ -185,7 +195,8 @@
                 "code": "procedure-ops-code"
               }
             ]
-          }
+          },
+          "id": "strat-8"
         },
         {
           "criteria": {
@@ -199,7 +210,8 @@
                 "code": "procedure-sct-code"
               }
             ]
-          }
+          },
+          "id": "strat-9"
         }
       ]
     },
@@ -218,7 +230,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Consent?_profile=http://fhir.de/ConsentManagement/StructureDefinition/Consent"
-          }
+          },
+          "id": "initial-population-identifier-4"
         }
       ],
       "stratifier": [
@@ -234,7 +247,8 @@
                 "code": "consent-mdat-vearbeiten-speichern"
               }
             ]
-          }
+          },
+          "id": "strat-10"
         }
       ]
     },
@@ -253,7 +267,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Specimen?_profile=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
-          }
+          },
+          "id": "initial-population-identifier-5"
         }
       ],
       "stratifier": [
@@ -269,7 +284,8 @@
                 "code": "specimen-type-sct-code"
               }
             ]
-          }
+          },
+          "id": "strat-11"
         },
         {
           "criteria": {
@@ -283,7 +299,8 @@
                 "code": "specimen-bodysite-sct-code"
               }
             ]
-          }
+          },
+          "id": "strat-12"
         },
         {
           "criteria": {
@@ -297,7 +314,8 @@
                 "code": "specimen-bodysite-icdo3-code"
               }
             ]
-          }
+          },
+          "id": "strat-13"
         }
       ]
     }

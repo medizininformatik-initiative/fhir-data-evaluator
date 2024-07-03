@@ -4,6 +4,8 @@ import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
 import static java.util.Objects.requireNonNull;
 
@@ -31,11 +33,14 @@ public class GroupEvaluator {
         var population = dataStore.getPopulation("/" +
                 initialPopulation.getCriteria().getExpressionElement());
 
-        var parsedStratifiers = group.getStratifier().stream().map(fhirStratifier -> ParsedStratifier.fromFhirStratifier(fhirPathEngine, fhirStratifier)).toList();
-        var groupReduceOp = new GroupReduceOp(parsedStratifiers.stream().map(s -> new StratifierReduceOp(s.componentExpressions())).toList());
-        var stratifierCodes = parsedStratifiers.stream().map(ParsedStratifier::code).toList();
+        var groupReduceOp = new GroupReduceOp(group.getStratifier().stream().map(s ->
+                new StratifierReduceOp(getComponentExpressions(fhirPathEngine, s))).toList());
 
-        return population.reduce(GroupResult.initial(stratifierCodes), groupReduceOp);
+        var initialStratifierResults = group.getStratifier().stream().map(s ->
+                        StratifierResult.initial(s.hasCode() ? HashableCoding.ofFhirCoding(s.getCode().getCodingFirstRep()) : null))
+                .toList();
+
+        return population.reduce(GroupResult.initial(initialStratifierResults), groupReduceOp);
     }
 
     private Measure.MeasureGroupPopulationComponent findInitialPopulation(Measure.MeasureGroupComponent group) {
@@ -60,5 +65,27 @@ public class GroupEvaluator {
         }
 
         return foundInitialPopulation;
+    }
+
+    private static List<ComponentExpression> getComponentExpressions(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+        if (fhirStratifier.hasCriteria() && !fhirStratifier.hasComponent()) {
+            return getComponentExpressionsFromCriteria(fhirPathEngine, fhirStratifier);
+        }
+
+        if (fhirStratifier.hasComponent() && !fhirStratifier.hasCriteria()) {
+            return getComponentExpressionsFromComponents(fhirPathEngine, fhirStratifier);
+        }
+
+        throw new IllegalArgumentException("Stratifier did not contain either criteria or component exclusively");
+    }
+
+    private static List<ComponentExpression> getComponentExpressionsFromCriteria(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+        return List.of(ComponentExpression.fromCriteria(fhirPathEngine, fhirStratifier));
+    }
+
+    private static List<ComponentExpression> getComponentExpressionsFromComponents(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+        return fhirStratifier.getComponent().stream()
+                .map(component -> ComponentExpression.fromComponent(fhirPathEngine, component))
+                .toList();
     }
 }

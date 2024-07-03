@@ -1,4 +1,4 @@
-Profile: FhirDataEvaluatorCVMeasure
+Profile: FhirDataEvaluatorContinuousVariableMeasure
 Parent: http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cv-measure-cqfm
 Description: "The Profile for the Measures used in the Fhir Data Evaluator"
 
@@ -16,5 +16,3 @@ Description: "The Profile for the Measures used in the Fhir Data Evaluator"
 * group.population[measurePopulation].criteria.language = #text/fhirpath
 * group.population[measureObservation].criteria.language = #text/fhirpath
 * group.population[measureObservation].extension[aggregateMethod].valueCode = #unique-count
-
-

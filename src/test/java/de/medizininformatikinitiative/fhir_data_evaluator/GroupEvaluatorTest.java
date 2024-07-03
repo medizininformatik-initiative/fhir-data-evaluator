@@ -18,6 +18,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,50 +151,6 @@ class GroupEvaluatorTest {
             }
 
             @Test
-            public void test_stratifierWithoutCoding() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of(new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH)))
-                        .setCode(null)
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Stratifier did not contain exactly one coding");
-            }
-
-            @Test
-            public void test_stratifierWithMultipleCodings() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of(new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH)))
-                        .setCode(new CodeableConcept()
-                                .addCoding(COND_DEF_CODING)
-                                .addCoding(COND_DEF_CODING))
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Stratifier did not contain exactly one coding");
-            }
-
-            @Test
-            public void test_stratifierWithWrongLanguage() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of(new Measure.MeasureGroupStratifierComponent().setCriteria(expressionOfPath(COND_CODE_PATH.getExpression()).setLanguage("some-other-language"))))
-                        .setCode(new CodeableConcept(COND_DEF_CODING))
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Stratifier did not contain exactly one coding");
-            }
-
-            @Test
             public void test_componentWithoutCoding() {
                 when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -270,7 +227,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -293,7 +250,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -318,7 +275,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat(result.stratifierResults().get(0))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(new InitialPopulation(2)))
                                     ));
@@ -344,7 +301,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat(result.stratifierResults().get(0))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE),
                                             Set.of(new StratumComponent(
@@ -373,7 +330,7 @@ class GroupEvaluatorTest {
                         assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                         assertThat((result.stratifierResults().get(0)))
                                 .isEqualTo(
-                                        new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                                 Set.of(StratumComponent.ofFailedNoValueFound(COND_VALUE_KEYPAIR.code())),
                                                 new Populations(InitialPopulation.ONE))
                                         ));
@@ -399,7 +356,7 @@ class GroupEvaluatorTest {
                         assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                         assertThat((result.stratifierResults().get(0)))
                                 .isEqualTo(
-                                        new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                                 Set.of(StratumComponent.ofFailedTooManyValues(COND_VALUE_KEYPAIR.code())),
                                                 new Populations(InitialPopulation.ONE))
                                         ));
@@ -422,7 +379,7 @@ class GroupEvaluatorTest {
                         assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                         assertThat((result.stratifierResults().get(0)))
                                 .isEqualTo(
-                                        new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                                 Set.of(StratumComponent.ofFailedInvalidType(COND_VALUE_KEYPAIR.code())),
                                                 new Populations(InitialPopulation.ONE))
                                         ));
@@ -445,7 +402,7 @@ class GroupEvaluatorTest {
                         assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                         assertThat((result.stratifierResults().get(0)))
                                 .isEqualTo(
-                                        new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                                 Set.of(StratumComponent.ofFailedMissingFields(COND_VALUE_KEYPAIR.code())),
                                                 new Populations(InitialPopulation.ONE))
                                         ));
@@ -468,7 +425,7 @@ class GroupEvaluatorTest {
                         assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                         assertThat((result.stratifierResults().get(0)))
                                 .isEqualTo(
-                                        new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                                 Set.of(StratumComponent.ofFailedMissingFields(COND_VALUE_KEYPAIR.code())),
                                                 new Populations(InitialPopulation.ONE))
                                         ));
@@ -498,11 +455,11 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(1).populations()).isNotNull();
                     assertThat(result.stratifierResults())
                             .containsExactly(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ),
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -528,10 +485,10 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(1).populations()).isNotNull();
                     assertThat(result.stratifierResults())
                             .containsExactly(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(Set.of(COND_VALUE_KEYPAIR),
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ),
-                                    new StratifierResult(HashableCoding.ofFhirCoding(STATUS_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(STATUS_DEF_CODING)), Map.of(
                                             Set.of(STATUS_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -566,7 +523,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR, STATUS_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -593,7 +550,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(
                                                     COND_VALUE_KEYPAIR,
                                                     new StratumComponent(
@@ -624,7 +581,7 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(COND_VALUE_KEYPAIR),
                                             new Populations(InitialPopulation.ONE))
                                     ));
@@ -673,7 +630,7 @@ class GroupEvaluatorTest {
 
                     assertThat((result.stratifierResults().get(0)))
                             .isEqualTo(
-                                    new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                             Set.of(condValueKeypair_1, statusValueKeypair_1), new Populations(InitialPopulation.ONE),
                                             Set.of(condValueKeypair_1, statusValueKeypair_2), new Populations(InitialPopulation.ONE),
                                             Set.of(condValueKeypair_2, statusValueKeypair_1), new Populations(InitialPopulation.ONE),
@@ -713,6 +670,7 @@ class GroupEvaluatorTest {
             public static final StratumComponent QUANTITY_VALUE_KEYPAIR = new StratumComponent(
                     HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING),
                     HashableCoding.ofSingleCodeValue(NG_ML));
+
             @Test
             public void test_quantityCode() {
                 when(dataStore.getPopulation("/" + OBSERVATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getObservation(NG_ML))));
@@ -730,7 +688,7 @@ class GroupEvaluatorTest {
                 assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                 assertThat((result.stratifierResults().get(0)))
                         .isEqualTo(
-                                new StratifierResult(HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING), Map.of(
+                                new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING)), Map.of(
                                         Set.of(QUANTITY_VALUE_KEYPAIR),
                                         new Populations(InitialPopulation.ONE))
                                 ));
@@ -758,7 +716,7 @@ class GroupEvaluatorTest {
                 assertThat(result.stratifierResults().get(0).populations()).isNotNull();
                 assertThat((result.stratifierResults().get(0)))
                         .isEqualTo(
-                                new StratifierResult(HashableCoding.ofFhirCoding(GENDER_DEF_CODING), Map.of(
+                                new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(GENDER_DEF_CODING)), Map.of(
                                         Set.of(GENDER_VALUE_KEYPAIR),
                                         new Populations(InitialPopulation.ONE))
                                 ));
@@ -783,7 +741,7 @@ class GroupEvaluatorTest {
             assertThat(result.stratifierResults().get(0).populations()).isNotNull();
             assertThat((result.stratifierResults().get(0)))
                     .isEqualTo(
-                            new StratifierResult(HashableCoding.ofFhirCoding(GENDER_DEF_CODING), Map.of(
+                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(GENDER_DEF_CODING)), Map.of(
                                     Set.of(new StratumComponent(HashableCoding.ofFhirCoding(GENDER_DEF_CODING),
                                             HashableCoding.FAIL_NO_VALUE_FOUND)),
                                     new Populations(InitialPopulation.ONE))
@@ -798,7 +756,7 @@ class GroupEvaluatorTest {
         static final StratumComponent COND_CODE_EXISTS_TRUE = new StratumComponent(
                 HashableCoding.ofFhirCoding(COND_DEF_CODING),
                 HashableCoding.ofSingleCodeValue("true"));
-        static final StratumComponent COND_CODE_EXISTS_FALSE= new StratumComponent(
+        static final StratumComponent COND_CODE_EXISTS_FALSE = new StratumComponent(
                 HashableCoding.ofFhirCoding(COND_DEF_CODING),
                 HashableCoding.ofSingleCodeValue("false"));
 
@@ -819,7 +777,7 @@ class GroupEvaluatorTest {
             assertThat(result.stratifierResults().get(0).populations()).isNotNull();
             assertThat((result.stratifierResults().get(0)))
                     .isEqualTo(
-                            new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                     Set.of(COND_CODE_EXISTS_TRUE),
                                     new Populations(InitialPopulation.ONE))
                             ));
@@ -842,7 +800,7 @@ class GroupEvaluatorTest {
             assertThat(result.stratifierResults().get(0).populations()).isNotNull();
             assertThat((result.stratifierResults().get(0)))
                     .isEqualTo(
-                            new StratifierResult(HashableCoding.ofFhirCoding(COND_DEF_CODING), Map.of(
+                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
                                     Set.of(COND_CODE_EXISTS_FALSE),
                                     new Populations(InitialPopulation.ONE))
                             ));

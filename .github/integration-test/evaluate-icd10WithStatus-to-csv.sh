@@ -22,7 +22,7 @@ while IFS=, read -r status_system status_code status_display icd10_system icd10_
         STRATIFIER_COUNT=$count
         break
     fi
-done < "$OUTPUT_DIR"/icd10-code-and-status.csv
+done < "$OUTPUT_DIR"/icd10-code-condition-clinical-status.csv
 
 if [ "$STRATIFIER_COUNT" = "$EXPECTED_STRATIFIER_COUNT" ]; then
   echo "OK 👍: stratifier count ($STRATIFIER_COUNT) equals the expected count"

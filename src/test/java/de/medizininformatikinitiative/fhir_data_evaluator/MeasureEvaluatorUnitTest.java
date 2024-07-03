@@ -85,7 +85,6 @@ public class MeasureEvaluatorUnitTest {
 
         assertInitialPopulation(result.getGroup().get(0).getPopulation().get(0));
         assertInitialPopulation(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getPopulation().get(0));
-        assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getCode().get(0), COND_DEF_SYSTEM, COND_DEF_CODE);
         assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getComponent().get(0).getCode(), STATUS_DEF_SYSTEM, STATUS_DEF_CODE);
         assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getComponent().get(0).getValue(), STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE);
         assertCodeableConcept(result.getGroup().get(0).getStratifier().get(0).getStratum().get(0).getComponent().get(1).getCode(), COND_DEF_SYSTEM, COND_DEF_CODE);

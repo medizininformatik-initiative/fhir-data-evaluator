@@ -1,6 +1,5 @@
-
 Instance: ExampleConditionIcd10AndPatCount
-InstanceOf: FhirDataEvaluatorCVMeasure
+InstanceOf: FhirDataEvaluatorContinuousVariableMeasure
 Description: "Example Measure to count all ICD-10 codes and the patient count."
 * status = #active
 * url = "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10AndPatCount"
@@ -11,20 +10,17 @@ Description: "Example Measure to count all ICD-10 codes and the patient count."
 * description = "Example Measure to count all ICD-10 codes and the patient count."
 
 * group[0].id = "group-1"
-* group[0].population[initialPopulation].code.coding.code = #initial-population
-* group[0].population[initialPopulation].code.coding.system = "http://terminology.hl7.org/CodeSystem/measure-population"
+* group[0].population[initialPopulation].code.coding = $measure-population#initial-population
 * group[0].population[initialPopulation].criteria.expression = "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
 * group[0].population[initialPopulation].criteria.language = #text/x-fhir-query
 * group[0].population[initialPopulation].id = "initial-population-identifier"
 
-* group[0].population[measurePopulation].code.coding.code = #measure-population
-* group[0].population[measurePopulation].code.coding.system = "http://terminology.hl7.org/CodeSystem/measure-population"
+* group[0].population[measurePopulation].code.coding = $measure-population#measure-population
 * group[0].population[measurePopulation].criteria.expression = "Condition"
 * group[0].population[measurePopulation].criteria.language = #text/fhirpath
 * group[0].population[measurePopulation].id = "measure-population-identifier"
 
-* group[0].population[measureObservation].code.coding.code = #measure-observation
-* group[0].population[measureObservation].code.coding.system = "http://terminology.hl7.org/CodeSystem/measure-population"
+* group[0].population[measureObservation].code.coding = $measure-population#measure-observation
 * group[0].population[measureObservation].criteria.expression = "Condition.subject.reference"
 * group[0].population[measureObservation].criteria.language = #text/fhirpath
 * group[0].population[measureObservation].extension[aggregateMethod].valueCode = #unique-count
@@ -50,8 +46,7 @@ Description: "Example Measure to count all Snomed codes with clinical status."
 * description = "Example Measure to count all ICD-10 codes and the patient count."
 
 * group[0].id = "group-1"
-* group[0].population[initialPopulation].code.coding.code = #initial-population
-* group[0].population[initialPopulation].code.coding.system = "http://terminology.hl7.org/CodeSystem/measure-population"
+* group[0].population[initialPopulation].code.coding = $measure-population#initial-population
 * group[0].population[initialPopulation].criteria.expression = "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
 * group[0].population[initialPopulation].criteria.language = #text/x-fhir-query
 * group[0].population[initialPopulation].id = "initial-population-identifier"

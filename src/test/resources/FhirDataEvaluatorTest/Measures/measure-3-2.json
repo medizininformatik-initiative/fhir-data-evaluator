@@ -1,5 +1,17 @@
 {
   "resourceType": "Measure",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "measure-3-2",
+  "description": "Measure 3-2 for integration test.",
   "group": [
     {
       "population": [
@@ -15,35 +27,25 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Observation"
-          }
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
         {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "(Observation.value as Quantity).comparator"
+          },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "observation-value-comparator"
+                "code": "value-comparator"
               }
             ]
           },
-          "component": [
-            {
-              "criteria": {
-                "language": "text/fhirpath",
-                "expression": "(Observation.value as Quantity).comparator"
-              },
-              "code": {
-                "coding": [
-                  {
-                    "system": "http://fhir-evaluator/strat/system",
-                    "code": "value-comparator"
-                  }
-                ]
-              }
-            }
-          ]
+          "id": "strat-1"
         }
       ]
     }
