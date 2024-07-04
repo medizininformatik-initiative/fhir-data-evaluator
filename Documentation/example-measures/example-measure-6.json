@@ -2,7 +2,7 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
   "version": "1.0",
@@ -30,7 +30,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          }
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
@@ -46,7 +47,8 @@
           "criteria": {
             "language": "text/fhirpath",
             "expression": "Condition.code.coding"
-          }
+          },
+          "id": "strat-1"
         }
       ]
     },
@@ -65,7 +67,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Observation?_versionId=125"
-          }
+          },
+          "id": "initial-population-identifier-1"
         }
       ],
       "stratifier": [
@@ -81,7 +84,8 @@
           "criteria": {
             "language": "text/fhirpath",
             "expression": "Observation.value.coding"
-          }
+          },
+          "id": "strat-2"
         }
       ]
     },
@@ -99,7 +103,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Procedure?_versionId=125"
-          }
+          },
+          "id": "initial-population-identifier-2"
         }
       ],
       "stratifier": [
@@ -115,7 +120,8 @@
           "criteria": {
             "language": "text/fhirpath",
             "expression": "Procedure.code.coding"
-          }
+          },
+          "id": "strat-3"
         }
       ]
     }

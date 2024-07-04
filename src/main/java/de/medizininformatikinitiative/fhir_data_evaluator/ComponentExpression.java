@@ -82,7 +82,7 @@ public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding 
 
     private StratumComponent evaluateCoding(Coding coding) {
 
-        return  (coding.hasSystem() && coding.hasCode()) ?
+        return (coding.hasSystem() && coding.hasCode()) ?
                 new StratumComponent(code, HashableCoding.ofFhirCoding(coding)) :
                 StratumComponent.ofFailedMissingFields(code);
     }

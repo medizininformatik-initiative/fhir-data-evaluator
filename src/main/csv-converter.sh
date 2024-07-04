@@ -10,8 +10,13 @@ report="${outputDir}/measure-report.json"
 
 jq -c '.group[]' "$report" | while IFS= read -r group; do
     echo "$group" | jq -c '.stratifier[]' | while IFS= read -r stratifier; do
-      strat_code=$(echo "$stratifier" | jq --raw-output '.code[0].coding[0].code')
-      filename="${outputDir}/${strat_code}.csv"
+
+      if ! echo "$stratifier" | jq -e 'has("stratum")' > /dev/null; then
+        continue
+      fi
+
+      strat_codes=$(echo "$stratifier" | jq --raw-output 'if has("code") then (.code[0].coding[0].code) else (.stratum[0].component | map(.code.coding[0].code) | join("-")) end')
+      filename="${outputDir}/${strat_codes}.csv"
 
       result=$(echo "$stratifier" | jq --raw-output '
                       (.) as $stratifier | .stratum[0] | if has("component") then

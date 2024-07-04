@@ -21,8 +21,8 @@ public record GroupResult(Populations populations, List<StratifierResult> strati
         stratifierResults = List.copyOf(stratifierResults);
     }
 
-    public static GroupResult initial(List<HashableCoding> stratifierCodes) {
-        return new GroupResult(Populations.ZERO, stratifierCodes.stream().map(StratifierResult::initial).toList());
+    public static GroupResult initial(List<StratifierResult> initialResults) {
+        return new GroupResult(Populations.ZERO, initialResults);
     }
 
     public GroupResult applyResource(List<StratifierReduceOp> stratifierOperations, Resource resource) {
