@@ -60,6 +60,12 @@ class MeasureEvaluatorIntegrationTest {
             new HashableCoding("http://fhir-data-evaluator/strat/system", "observation-value-code-exists", "some-display"),
             HashableCoding.ofSingleCodeValue("false"));
 
+    static final String measure1 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-1.json";
+    static final String measure2 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-2.json";
+    static final String measure3_1 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-1.json";
+    static final String measure3_2 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-2.json";
+    static final String measure4 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-4.json";
+
     @TestConfiguration
     static class Config {
         @Bean
@@ -100,7 +106,7 @@ class MeasureEvaluatorIntegrationTest {
         if (!dataImported) {
             webClient.post()
                     .contentType(APPLICATION_JSON)
-                    .bodyValue(Files.readString(Path.of("src/test/resources/FhirDataEvaluatorTest/Bundle.json")))
+                    .bodyValue(Files.readString(Path.of("src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Bundle.json")))
                     .retrieve()
                     .toBodilessEntity()
                     .block();
@@ -117,7 +123,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Condition with single criteria")
     public void test_measure_1() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-1.json"));
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure1));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -129,7 +135,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Condition with components")
     public void test_measure_2() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-2.json"));
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure2));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
         assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60, ACTIVE))
@@ -140,7 +146,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value code of type CodeType")
     public void test_measure_3_1() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-1.json"));
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure3_1));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -155,7 +161,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value code of type Enumeration")
     public void test_measure_3_2() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-2.json"));
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure3_2));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -167,7 +173,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value exists")
     public void test_measure_4() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure("src/test/resources/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-4.json"));
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure4));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
         assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(EXISTS_TRUE))

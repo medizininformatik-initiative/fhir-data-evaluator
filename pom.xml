@@ -112,7 +112,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>src/test/resources/FhirDataEvaluatorTest/Measures</outputDirectory>
+							<outputDirectory>src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures</outputDirectory>
 							<resources>
 								<resource>
 									<directory>shorthand/FhirDataEvaluatorIG/fsh-generated/resources</directory>
