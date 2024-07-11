@@ -15,7 +15,8 @@ import static java.util.Objects.requireNonNull;
 
 public class GroupEvaluator {
 
-    final String INITIAL_POPULATION_LANGUAGE = "text/x-fhir-query";
+    final String FHIR_QUERY = "text/x-fhir-query";
+    final String FHIR_PATH = "text/fhirpath";
     final String CRITERIA_REFERENCE_URL = "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference";
     final String CRITERIA_REFERENCE_VALUE = "measure-population-identifier";
 
@@ -51,6 +52,11 @@ public class GroupEvaluator {
     private Populations createPopulationsTemplate(Measure.MeasureGroupComponent group) {
         var measurePopulation = findMeasurePopulation(group);
         var observationPopulation = findObservationPopulation(group);
+
+        if (measurePopulation.isEmpty() && observationPopulation.isPresent()) {
+            throw new IllegalArgumentException("Group must not contain a Measure Observation without a Measure Population");
+        }
+
         return new Populations(InitialPopulation.ZERO, measurePopulation, observationPopulation);
     }
 
@@ -63,59 +69,66 @@ public class GroupEvaluator {
 
         var foundInitialPopulation = foundInitialPopulations.get(0);
 
-        if (!foundInitialPopulation.getCriteria().getLanguage().equals(INITIAL_POPULATION_LANGUAGE)) {
-            throw new IllegalArgumentException("Language of Initial Population was not equal to '%s'".formatted(INITIAL_POPULATION_LANGUAGE));
+        if (!foundInitialPopulation.getCriteria().getLanguage().equals(FHIR_QUERY)) {
+            throw new IllegalArgumentException("Language of Initial Population was not equal to '%s'".formatted(FHIR_QUERY));
         }
 
         return foundInitialPopulation;
     }
 
     private Optional<MeasurePopulation> findMeasurePopulation(Measure.MeasureGroupComponent group) {
-        var foundMeasurePopulation = findPopulationsByCode(group, MEASURE_POPULATION_CODING);
-        if (foundMeasurePopulation.isEmpty()) {
+        var foundMeasurePopulations = findPopulationsByCode(group, MEASURE_POPULATION_CODING);
+        if (foundMeasurePopulations.isEmpty()) {
             return Optional.empty();
         }
 
-        if (foundMeasurePopulation.size() > 1) {
+        if (foundMeasurePopulations.size() > 1) {
             throw new IllegalArgumentException("Measure did contain more than one measure population");
         }
 
-        return Optional.of(new MeasurePopulation(0, fhirPathEngine.parse(foundMeasurePopulation.get(0).getCriteria().getExpression())));
+        var foundMeasurePopulation = foundMeasurePopulations.get(0);
+        if (!foundMeasurePopulation.getCriteria().getLanguage().equals(FHIR_PATH)) {
+            throw new IllegalArgumentException("Language of Measure Population was not equal to '%s'".formatted(FHIR_PATH));
+        }
+
+        return Optional.of(new MeasurePopulation(0, fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression())));
     }
 
     private Optional<ObservationPopulation> findObservationPopulation(Measure.MeasureGroupComponent group) {
-        var foundObservationPopulation = findPopulationsByCode(group, MEASURE_OBSERVATION_CODING);
+        var foundObservationPopulations = findPopulationsByCode(group, MEASURE_OBSERVATION_CODING);
 
-        if (foundObservationPopulation.isEmpty()) {
+        if (foundObservationPopulations.isEmpty()) {
             return Optional.empty();
         }
 
-        if (foundObservationPopulation.size() > 1) {
+        if (foundObservationPopulations.size() > 1) {
             throw new IllegalArgumentException("Measure did contain more than one observation population");
         }
 
-        var criteriaReferences = foundObservationPopulation.get(0).getExtensionsByUrl(CRITERIA_REFERENCE_URL);
+        var foundObservationPopulation = foundObservationPopulations.get(0);
+        if (!foundObservationPopulation.getCriteria().getLanguage().equals(FHIR_PATH)) {
+            throw new IllegalArgumentException("Language of Measure Observation was not equal to '%s'".formatted(FHIR_PATH));
+        }
+
+        var criteriaReferences = foundObservationPopulation.getExtensionsByUrl(CRITERIA_REFERENCE_URL);
         if (criteriaReferences.size() != 1)
-            throw new IllegalArgumentException("Measure Observation Population did not contain exactly one aggregate method");
+            throw new IllegalArgumentException("Measure Observation Population did not contain exactly one criteria reference");
         if (!criteriaReferences.get(0).hasValue())
             throw new IllegalArgumentException("Criteria Reference of Measure Observation Population has no value");
         if (!criteriaReferences.get(0).getValue().toString().equals(CRITERIA_REFERENCE_VALUE))
-            throw new IllegalArgumentException("Value of Criteria Reference of Measure Observation Population must be equal to %s".formatted(CRITERIA_REFERENCE_VALUE));
+            throw new IllegalArgumentException("Value of Criteria Reference of Measure Observation Population must be equal to '%s'".formatted(CRITERIA_REFERENCE_VALUE));
 
-        var aggregateMethods = foundObservationPopulation.get(0).getExtensionsByUrl(AggregateUniqueCount.EXTENSION_URL);
+        var aggregateMethods = foundObservationPopulation.getExtensionsByUrl(AggregateUniqueCount.EXTENSION_URL);
         if (aggregateMethods.size() != 1)
             throw new IllegalArgumentException("Measure Observation Population did not contain exactly one aggregate method");
         if (!aggregateMethods.get(0).hasValue())
             throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has no value");
 
-        if (aggregateMethods.get(0).getValue() instanceof CodeType c) {
-            if (!Objects.equals(c.getCode(), AggregateUniqueCount.EXTENSION_VALUE)) {
-                throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has not value %s".formatted(AggregateUniqueCount.EXTENSION_VALUE));
-            }
-            return Optional.of(new ObservationPopulation(0, fhirPathEngine.parse(foundObservationPopulation.get(0).getCriteria().getExpression()), new AggregateUniqueCount(new HashSet<>())));
-        } else {
-            throw new IllegalArgumentException("Value of aggregate method was not of type Coding");
+        if (! aggregateMethods.get(0).getValue().toString().equals(AggregateUniqueCount.EXTENSION_VALUE)) {
+            throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCount.EXTENSION_VALUE));
         }
+
+        return Optional.of(new ObservationPopulation(0, fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()), new AggregateUniqueCount(new HashSet<>())));
     }
 
     private List<Measure.MeasureGroupPopulationComponent> findPopulationsByCode(Measure.MeasureGroupComponent group, HashableCoding code) {

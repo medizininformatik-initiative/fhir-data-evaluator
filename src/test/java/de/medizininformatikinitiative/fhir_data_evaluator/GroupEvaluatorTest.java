@@ -21,8 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +31,8 @@ class GroupEvaluatorTest {
     static final Expression COND_CODE_PATH = expressionOfPath("Condition.code.coding");
     static final Expression COND_STATUS_PATH = expressionOfPath("Condition.clinicalStatus.coding");
     static final String COND_VALUE_CODE = "cond-value-code";
+    static final String COND_VALUE_CODE_1 = "cond-val-1";
+    static final String COND_VALUE_CODE_2 = "cond-val-2";
     static final String COND_VALUE_SYSTEM = "http://fhir.de/CodeSystem/bfarm/icd-10-gm";
     static final String COND_DEF_CODE = "cond-def-code";
     static final String COND_DEF_SYSTEM = "cond-def-sys";
@@ -45,21 +46,34 @@ class GroupEvaluatorTest {
     public static final StratumComponent COND_VALUE_KEYPAIR = new StratumComponent(
             HashableCoding.ofFhirCoding(COND_DEF_CODING),
             new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE, SOME_DISPLAY));
+    public static final StratumComponent COND_VALUE_KEYPAIR_1 = new StratumComponent(
+            HashableCoding.ofFhirCoding(COND_DEF_CODING),
+            new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_1, SOME_DISPLAY));
+    public static final StratumComponent COND_VALUE_KEYPAIR_2 = new StratumComponent(
+            HashableCoding.ofFhirCoding(COND_DEF_CODING),
+            new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_2, SOME_DISPLAY));
     public static final StratumComponent STATUS_VALUE_KEYPAIR = new StratumComponent(
             new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY),
             new HashableCoding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY));
     static final String INITIAL_POPULATION_CODE = "initial-population";
-    static final String INITIAL_POPULATION_SYSTEM = "http://terminology.hl7.org/CodeSystem/measure-population";
+    static final String MEASURE_POPULATION_CODE = "measure-population";
+    static final String OBSERVATION_POPULATION_CODE = "measure-observation";
+    static final String POPULATION_SYSTEM = "http://terminology.hl7.org/CodeSystem/measure-population";
     static final FHIRPathEngine pathEngine = createPathEngine();
     public static final String INITIAL_POPULATION_LANGUAGE = "text/x-fhir-query";
-    public static final String STRATIFIER_LANGUAGE = "text/fhirpath";
+    public static final String FHIR_PATH = "text/fhirpath";
+    public static final String MEASURE_POPULATION_ID = "measure-population-identifier";
+    static final String CRITERIA_REFERENCE_URL = "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference";
+    static final String MEASURE_POPULATION_PATH = "Condition";
+    static final String OBSERVATION_POPULATION_PATH = "Condition.subject.reference";
+    final String CRITERIA_REFERENCE_VALUE = "measure-population-identifier";
 
     @Mock
     DataStore dataStore;
 
     private static Expression expressionOfPath(String expStr) {
         Expression expression = new Expression();
-        return expression.setExpression(expStr).setLanguage(STRATIFIER_LANGUAGE);
+        return expression.setExpression(expStr).setLanguage(FHIR_PATH);
     }
 
     public static Condition getCondition() {
@@ -67,6 +81,10 @@ class GroupEvaluatorTest {
         CodeableConcept condConcept = new CodeableConcept().addCoding(condCoding);
 
         return new Condition().setCode(condConcept);
+    }
+
+    public static Condition getConditionWithSubject(String subjectID) {
+        return getCondition().setSubject(new Reference().setReference(subjectID));
     }
 
     public static Patient getPatient(AdministrativeGender gender) {
@@ -87,7 +105,23 @@ class GroupEvaluatorTest {
     public static Measure.MeasureGroupPopulationComponent getInitialPopulation(String query) {
         return new Measure.MeasureGroupPopulationComponent()
                 .setCriteria(new Expression().setExpression(query).setLanguage(INITIAL_POPULATION_LANGUAGE))
-                .setCode(new CodeableConcept(new Coding().setSystem(INITIAL_POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE)));
+                .setCode(new CodeableConcept(new Coding().setSystem(POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE)));
+    }
+
+    public static Measure.MeasureGroupPopulationComponent getMeasurePopulation(String fhirpath) {
+        return (Measure.MeasureGroupPopulationComponent) new Measure.MeasureGroupPopulationComponent()
+                .setCriteria(new Expression().setExpression(fhirpath).setLanguage(FHIR_PATH))
+                .setCode(new CodeableConcept(new Coding().setSystem(POPULATION_SYSTEM).setCode(MEASURE_POPULATION_CODE)))
+                .setId(MEASURE_POPULATION_ID);
+    }
+
+    public static Measure.MeasureGroupPopulationComponent getObservationPopulation(String fhirpath) {
+        return (Measure.MeasureGroupPopulationComponent) new Measure.MeasureGroupPopulationComponent()
+                .setCriteria(new Expression().setExpression(fhirpath).setLanguage(FHIR_PATH))
+                .setCode(new CodeableConcept(new Coding().setSystem(POPULATION_SYSTEM).setCode(OBSERVATION_POPULATION_CODE)))
+                .setExtension(List.of(
+                        new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                        new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))));
     }
 
     public static Measure.MeasureGroupComponent getMeasureGroup() {
@@ -97,112 +131,343 @@ class GroupEvaluatorTest {
     }
 
     @Nested
-    @DisplayName("Test a wide range of scenarios using type Coding")
-    class CodingTypeComplex {
+    class ExceptionTests {
 
+        @Test
+        public void test_twoCodingsInPopulation() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(
+                    getInitialPopulation(CONDITION_QUERY).setCode(new CodeableConcept()
+                            .addCoding(new Coding().setSystem(POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE))
+                            .addCoding(new Coding().setSystem(POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE)))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
-        @Nested
-        class ExceptionTests {
-
-            @Test
-            public void test_twoCodingsInPopulation() {
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(
-                        getInitialPopulation(CONDITION_QUERY).setCode(new CodeableConcept()
-                                .addCoding(new Coding().setSystem(INITIAL_POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE))
-                                .addCoding(new Coding().setSystem(INITIAL_POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE)))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Population in Measure did not contain exactly one Coding");
-            }
-
-            @Test
-            public void test_twoInitialPopulations() {
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(getInitialPopulation(CONDITION_QUERY), getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Measure did not contain exactly one initial population");
-            }
-
-            @Test
-            public void test_noInitialPopulations() {
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of());
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Measure did not contain exactly one initial population");
-            }
-
-            @Test
-            public void test_wrongInitialPopulationLanguage() {
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(
-                        getInitialPopulation(CONDITION_QUERY)
-                                .setCriteria(new Expression().setExpressionElement(new StringType(CONDITION_QUERY))
-                                        .setLanguage("some-wrong-language"))));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Language of Initial Population was not equal to '%s'".formatted(INITIAL_POPULATION_LANGUAGE));
-            }
-
-            @Test
-            public void test_componentWithoutCoding() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of
-                                (new Measure.MeasureGroupStratifierComponent()
-                                        .setComponent(List.of(new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(null)))
-                                        .setCode(new CodeableConcept(COND_DEF_CODING))))
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Stratifier component did not contain exactly one coding");
-            }
-
-            @Test
-            public void test_componentWithMultipleCodings() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of(
-                                new Measure.MeasureGroupStratifierComponent()
-                                        .setComponent(List.of(new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(
-                                                new CodeableConcept()
-                                                        .addCoding(COND_DEF_CODING)
-                                                        .addCoding(COND_DEF_CODING))))
-                                        .setCode(new CodeableConcept(COND_DEF_CODING))))
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Stratifier component did not contain exactly one coding");
-            }
-
-            @Test
-            public void test_componentWithWrongLanguage() {
-                when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                        .setStratifier(List.of(
-                                new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
-                                                new Measure.MeasureGroupStratifierComponentComponent(expressionOfPath(COND_CODE_PATH.getExpression()).setLanguage("some-other-language"))
-                                                        .setCode(new CodeableConcept().addCoding(COND_DEF_CODING))))
-                                        .setCode(new CodeableConcept(COND_DEF_CODING))))
-                        .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessage("Language of stratifier component was not equal to '%s'".formatted(STRATIFIER_LANGUAGE));
-            }
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Population in Measure did not contain exactly one Coding");
         }
 
+        @Test
+        public void test_twoInitialPopulations() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(getInitialPopulation(CONDITION_QUERY), getInitialPopulation(CONDITION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure did not contain exactly one initial population");
+        }
+
+        @Test
+        public void test_noInitialPopulations() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of());
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure did not contain exactly one initial population");
+        }
+
+        @Test
+        public void test_wrongInitialPopulationLanguage() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(
+                    getInitialPopulation(CONDITION_QUERY)
+                            .setCriteria(new Expression().setExpressionElement(new StringType(CONDITION_QUERY))
+                                    .setLanguage("some-wrong-language"))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Language of Initial Population was not equal to '%s'".formatted(INITIAL_POPULATION_LANGUAGE));
+        }
+
+        @Test
+        public void test_componentWithoutCoding() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of
+                            (new Measure.MeasureGroupStratifierComponent()
+                                    .setComponent(List.of(new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(null)))
+                                    .setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Stratifier component did not contain exactly one coding");
+        }
+
+        @Test
+        public void test_componentWithMultipleCodings() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent()
+                                    .setComponent(List.of(new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(
+                                            new CodeableConcept()
+                                                    .addCoding(COND_DEF_CODING)
+                                                    .addCoding(COND_DEF_CODING))))
+                                    .setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Stratifier component did not contain exactly one coding");
+        }
+
+        @Test
+        public void test_componentWithWrongLanguage() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
+                                            new Measure.MeasureGroupStratifierComponentComponent(expressionOfPath(COND_CODE_PATH.getExpression()).setLanguage("some-other-language"))
+                                                    .setCode(new CodeableConcept().addCoding(COND_DEF_CODING))))
+                                    .setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Language of stratifier component was not equal to '%s'".formatted(FHIR_PATH));
+        }
+
+        @Test
+        public void test_multipleMeasurePopulations() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure did contain more than one measure population");
+        }
+
+        @Test
+        public void test_measurePopulation_withWrongLanguage() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH)
+                                    .setCriteria(new Expression().setExpression(MEASURE_POPULATION_PATH).setLanguage("some-other-language"))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Language of Measure Population was not equal to '%s'".formatted(FHIR_PATH));
+        }
+
+        @Test
+        public void test_observationPopulationWithoutMeasurePopulation() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Group must not contain a Measure Observation without a Measure Population");
+        }
+
+        @Test
+        public void test_multipleObservationPopulations() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure did contain more than one observation population");
+        }
+
+        @Test
+        public void test_observationPopulation_withWrongLanguage() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setCriteria(new Expression().setExpression(MEASURE_POPULATION_PATH).setLanguage("some-other-language"))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Language of Measure Observation was not equal to '%s'".formatted(FHIR_PATH));
+        }
+
+        @Test
+        public void test_observationPopulation_withoutCriteriaReference() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure Observation Population did not contain exactly one criteria reference");
+        }
+
+        @Test
+        public void test_observationPopulation_withTooManyCriteriaReferences() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID)),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure Observation Population did not contain exactly one criteria reference");
+        }
+
+        @Test
+        public void test_observationPopulation_criteriaReferenceWithNoValue() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(CRITERIA_REFERENCE_URL)))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Criteria Reference of Measure Observation Population has no value");
+        }
+
+        @Test
+        public void test_obesrvationPopulation_criteriaReferenceWithWrongValue() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType("some-other-value"))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Value of Criteria Reference of Measure Observation Population must be equal to '%s'".formatted(CRITERIA_REFERENCE_VALUE));
+        }
+
+        @Test
+        public void test_observationPopulation_withoutAggregateMethod() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure Observation Population did not contain exactly one aggregate method");
+        }
+
+        @Test
+        public void test_observationPopulation_withTooManyAggregateMethods() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Measure Observation Population did not contain exactly one aggregate method");
+        }
+
+        @Test
+        public void test_observationPopulation_aggregateMethodWithoutValue() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Aggregate Method of Measure Observation Population has no value");
+        }
+
+        @Test
+        public void test_observationPopulation_aggregateMethodWithWrongValue() {
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
+                                    .setExtension(List.of(
+                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType("some-value")),
+                                            new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCount.EXTENSION_VALUE));
+        }
+    }
+
+    @Nested
+    @DisplayName("Test a wide range of scenarios using type Coding")
+    class CodingTypeComplex {
 
         @Nested
         class StratifierOfSingleCriteria {
@@ -285,8 +550,8 @@ class GroupEvaluatorTest {
                 @Test
                 public void test_oneStratifierElement_twoDifferentResultValues() {
                     when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
-                            getCondition(),
-                            getCondition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode("some-other-value"))))));
+                            getCondition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_1))),
+                            getCondition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_2))))));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
                                     new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -302,11 +567,9 @@ class GroupEvaluatorTest {
                     assertThat(result.stratifierResults().get(0))
                             .isEqualTo(
                                     new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
+                                            Set.of(COND_VALUE_KEYPAIR_1),
                                             Populations.INITIAL_ONE,
-                                            Set.of(new StratumComponent(
-                                                    HashableCoding.ofFhirCoding(COND_DEF_CODING),
-                                                    new HashableCoding(COND_VALUE_SYSTEM, "some-other-value", SOME_DISPLAY))),
+                                            Set.of(COND_VALUE_KEYPAIR_2),
                                             Populations.INITIAL_ONE)
                                     ));
                 }
@@ -806,4 +1069,214 @@ class GroupEvaluatorTest {
         }
     }
 
+    @Nested
+    @DisplayName("Test Unique Count")
+    class UniqueCount {
+
+        static final String UNIQUE_VAL_1 = "val-1";
+        static final String UNIQUE_VAL_2 = "val-2";
+
+
+        @Test
+        @DisplayName("Two same values resulting in unique count '1'")
+        public void test_twoSameValues() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    getConditionWithSubject(UNIQUE_VAL_1),
+                    getConditionWithSubject(UNIQUE_VAL_1))));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
+            assertThat(result.populations().measurePopulation()).isPresent();
+            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation()).isPresent();
+            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result.stratifierResults().size()).isEqualTo(1);
+            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+
+            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
+            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
+            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
+            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
+            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Two different values resulting in unique count '2'")
+        public void test_twoDifferentValues() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    getConditionWithSubject(UNIQUE_VAL_1),
+                    getConditionWithSubject(UNIQUE_VAL_2))));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
+            assertThat(result.populations().measurePopulation()).isPresent();
+            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation()).isPresent();
+            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(2);
+            assertThat(result.stratifierResults().size()).isEqualTo(1);
+            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+
+            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
+            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
+            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
+            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
+            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(2);
+
+        }
+
+        @Test
+        @DisplayName("Two same values part of Measure Population and one different value not part of Measure Population")
+        public void test_twoSameValues_oneDifferentValue_withDifferentMeasurePopulation() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    getConditionWithSubject(UNIQUE_VAL_1).setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))),
+                    getConditionWithSubject(UNIQUE_VAL_1).setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))),
+                    getConditionWithSubject(UNIQUE_VAL_2))));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation("Condition.where(clinicalStatus.exists())"),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(result.populations().initialPopulation().count()).isEqualTo(3);
+            assertThat(result.populations().measurePopulation()).isPresent();
+            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation()).isPresent();
+            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result.stratifierResults().size()).isEqualTo(1);
+            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+
+            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
+            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
+            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(3);
+            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
+            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
+            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+        }
+
+
+        @Test
+        @DisplayName("Two Conditions with same value and one Condition with no value, leading to a different Measure Observation Population")
+        public void test_twoSameValues_withDifferentObservationPopulation() {
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    getConditionWithSubject(UNIQUE_VAL_1),
+                    getConditionWithSubject(UNIQUE_VAL_1),
+                    getCondition())));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(result.populations().initialPopulation().count()).isEqualTo(3);
+            assertThat(result.populations().measurePopulation()).isPresent();
+            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(3);
+            assertThat(result.populations().observationPopulation()).isPresent();
+            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result.stratifierResults().size()).isEqualTo(1);
+            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+
+            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
+            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
+            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(3);
+            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
+            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(3);
+            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
+            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Two Conditions with different coding but with same reference resulting in two stratums with count '1' each, " +
+                    "and group as a whole has also unique-count '1'")
+        public void test_twoDifferentStratumValues_withSameUniqueValue() {
+
+            when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    getConditionWithSubject(UNIQUE_VAL_1)
+                            .setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_1))),
+                    getConditionWithSubject(UNIQUE_VAL_1)
+                            .setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_2))))));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
+                    .setPopulation(List.of(
+                            getInitialPopulation(CONDITION_QUERY),
+                            getMeasurePopulation(MEASURE_POPULATION_PATH),
+                            getObservationPopulation(OBSERVATION_POPULATION_PATH)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
+            assertThat(result.populations().measurePopulation()).isPresent();
+            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation()).isPresent();
+            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
+            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result.stratifierResults().size()).isEqualTo(1);
+            assertThat(result.stratifierResults().get(0).populations().size()).isEqualTo(2);
+
+            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
+            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR_1));
+            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(1);
+            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
+            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(1);
+            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
+            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(1);
+            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+
+            var secondStratum = result.stratifierResults().get(0).populations().entrySet().stream().skip(1).iterator().next();
+            assertThat(secondStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR_2));
+            assertThat(secondStratum.getValue().initialPopulation().count()).isEqualTo(1);
+            assertThat(secondStratum.getValue().measurePopulation()).isPresent();
+            assertThat(secondStratum.getValue().measurePopulation().get().count()).isEqualTo(1);
+            assertThat(secondStratum.getValue().observationPopulation()).isPresent();
+            assertThat(secondStratum.getValue().observationPopulation().get().count()).isEqualTo(1);
+            assertThat(secondStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+        }
+    }
 }

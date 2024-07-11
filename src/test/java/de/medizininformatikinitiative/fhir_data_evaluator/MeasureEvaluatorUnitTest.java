@@ -32,12 +32,12 @@ public class MeasureEvaluatorUnitTest {
 
     private void assertInitialPopulation(MeasureReport.MeasureReportGroupPopulationComponent reportPopulation) {
         assertThat(reportPopulation.getCount()).isEqualTo(1);
-        assertCodeableConcept(reportPopulation.getCode(), INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
+        assertCodeableConcept(reportPopulation.getCode(), POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
     }
 
     private void assertInitialPopulation(MeasureReport.StratifierGroupPopulationComponent reportPopulation) {
         assertThat(reportPopulation.getCount()).isEqualTo(1);
-        assertCodeableConcept(reportPopulation.getCode(), INITIAL_POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
+        assertCodeableConcept(reportPopulation.getCode(), POPULATION_SYSTEM, INITIAL_POPULATION_CODE);
     }
 
     @Test
