@@ -9,17 +9,16 @@ executing FHIR Search queries and evaluating the resulting FHIR resources with F
 The Measure uses groups to distinguish between different populations. 
 
 Every population must have one population criteria of type `initial-population`. The initial population defines the 'base',
-on which the evaluator operates, with a FHIR-Query. So if the evaluator should operate on Condition resources, the FHIR-Query
-expression for the initial population would be "`Condition`".
-There can also be other populations in addition to the initial population. Read more about how to use the `measure-population`
-and `measure-observation` [here](#other-populations) to for example count not all encountered resources but only unique 
-patient ID's.
+on which the evaluator operates, with a FHIR Search Query. So if the evaluator should operate on Condition resources, the 
+FHIR Search Query expression for the initial population would be "`Condition`". There can also be other populations in 
+addition to the initial population. Read more about how to use the `measure-population`and `measure-observation` 
+[here](#other-populations) to for example count not all encountered resources but only unique patient ID's.
 
 
 ### Stratifier
-A Stratifier further evaluates the resources of the group populations.
+A Stratifier groups the resources of a population by the value returned by its expression(s).
 
-The stratifier field is a list of stratifier elements, that each can consist of ether criteria or components, but not
+The stratifier field is a list of stratifier elements, that each can consist of either criteria or components, but not
 both at the same time. The code of a stratifier element can be a custom but unique coding that roughly describes the 
 stratifier. Each component also
 consists of a code and a criteria. A criteria consists of a language and an expression. As language, currently only

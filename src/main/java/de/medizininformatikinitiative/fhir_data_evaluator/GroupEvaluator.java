@@ -1,13 +1,11 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import reactor.core.publisher.Mono;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.*;
@@ -41,8 +39,8 @@ public class GroupEvaluator {
 
         var populationsTemplate = createPopulationsTemplate(group);
         var groupReduceOp = new GroupReduceOp(group.getStratifier().stream().map(s ->
-                new StratifierReduceOp(getComponentExpressions(fhirPathEngine, s), populationsTemplate, fhirPathEngine)).toList(),
-                populationsTemplate, fhirPathEngine);
+                new StratifierReduceOp(getComponentExpressions(s), populationsTemplate)).toList(),
+                populationsTemplate);
 
         var initialStratifierResults = group.getStratifier().stream().map(StratifierResult::initial).toList();
 
@@ -91,7 +89,7 @@ public class GroupEvaluator {
             throw new IllegalArgumentException("Language of Measure Population was not equal to '%s'".formatted(FHIR_PATH));
         }
 
-        return Optional.of(new MeasurePopulation(0, fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression())));
+        return Optional.of(new MeasurePopulation(fhirPathEngine, 0, fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression())));
     }
 
     private Optional<ObservationPopulation> findObservationPopulation(Measure.MeasureGroupComponent group) {
@@ -124,11 +122,11 @@ public class GroupEvaluator {
         if (!aggregateMethods.get(0).hasValue())
             throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has no value");
 
-        if (! aggregateMethods.get(0).getValue().toString().equals(AggregateUniqueCount.EXTENSION_VALUE)) {
+        if (!aggregateMethods.get(0).getValue().toString().equals(AggregateUniqueCount.EXTENSION_VALUE)) {
             throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCount.EXTENSION_VALUE));
         }
 
-        return Optional.of(new ObservationPopulation(0, fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()), new AggregateUniqueCount(new HashSet<>())));
+        return Optional.of(new ObservationPopulation(fhirPathEngine, 0, fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()), new AggregateUniqueCount(new HashSet<>())));
     }
 
     private List<Measure.MeasureGroupPopulationComponent> findPopulationsByCode(Measure.MeasureGroupComponent group, HashableCoding code) {
@@ -143,23 +141,23 @@ public class GroupEvaluator {
         }).toList();
     }
 
-    private static List<ComponentExpression> getComponentExpressions(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+    private List<ComponentExpression> getComponentExpressions(Measure.MeasureGroupStratifierComponent fhirStratifier) {
         if (fhirStratifier.hasCriteria() && !fhirStratifier.hasComponent()) {
-            return getComponentExpressionsFromCriteria(fhirPathEngine, fhirStratifier);
+            return getComponentExpressionsFromCriteria(fhirStratifier);
         }
 
         if (fhirStratifier.hasComponent() && !fhirStratifier.hasCriteria()) {
-            return getComponentExpressionsFromComponents(fhirPathEngine, fhirStratifier);
+            return getComponentExpressionsFromComponents(fhirStratifier);
         }
 
         throw new IllegalArgumentException("Stratifier did not contain either criteria or component exclusively");
     }
 
-    private static List<ComponentExpression> getComponentExpressionsFromCriteria(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+    private List<ComponentExpression> getComponentExpressionsFromCriteria(Measure.MeasureGroupStratifierComponent fhirStratifier) {
         return List.of(ComponentExpression.fromCriteria(fhirPathEngine, fhirStratifier));
     }
 
-    private static List<ComponentExpression> getComponentExpressionsFromComponents(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+    private List<ComponentExpression> getComponentExpressionsFromComponents(Measure.MeasureGroupStratifierComponent fhirStratifier) {
         return fhirStratifier.getComponent().stream()
                 .map(component -> ComponentExpression.fromComponent(fhirPathEngine, component))
                 .toList();

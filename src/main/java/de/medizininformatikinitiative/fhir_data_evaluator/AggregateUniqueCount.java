@@ -11,11 +11,15 @@ public record AggregateUniqueCount(HashSet<String> aggregatedValues) {
     static final String EXTENSION_URL = "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod";
     static final String EXTENSION_VALUE = "unique-count";
 
+    public AggregateUniqueCount {
+        aggregatedValues = new HashSet<>(aggregatedValues);
+    }
+
     /**
      * Makes a copy of the {@link AggregateUniqueCount} with a copied set of {@code aggregatedValues}.
      */
     public AggregateUniqueCount copy() {
-        return new AggregateUniqueCount(new HashSet<>(aggregatedValues));
+        return new AggregateUniqueCount(aggregatedValues);
     }
 
     /**

@@ -14,10 +14,6 @@ public record InitialPopulation(int count) {
     public static final InitialPopulation ZERO = new InitialPopulation(0);
     public static final InitialPopulation ONE = new InitialPopulation(1);
 
-    public static InitialPopulation copyOf(InitialPopulation p) {
-        return new InitialPopulation(p.count);
-    }
-
     public InitialPopulation increaseCount() {
         return new InitialPopulation(count + 1);
     }

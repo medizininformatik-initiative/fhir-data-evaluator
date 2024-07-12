@@ -10,24 +10,31 @@ import java.util.List;
 import java.util.Optional;
 
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_POPULATION_CODING;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a measure population either on group or on stratifier level.
  *
- * @param count      the number of members in the measure population
- * @param expression the expression to extract the member of the measure population from the initial population
+ * @param fhirPathEngine the engine used to evaluate the expression
+ * @param count          the number of members in the measure population
+ * @param expression     the expression to extract the member of the measure population from the initial population
  */
-public record MeasurePopulation(int count, ExpressionNode expression) {
+public record MeasurePopulation(FHIRPathEngine fhirPathEngine, int count, ExpressionNode expression) {
+
+    public MeasurePopulation {
+        requireNonNull(fhirPathEngine);
+        requireNonNull(expression);
+    }
 
     /**
      * Makes a copy of the {@link MeasurePopulation} with a copied {@code count}, but the {@code expression} is not copied.
      * <p>
      */
     public MeasurePopulation shallowCopy() {
-        return new MeasurePopulation(count, expression);
+        return new MeasurePopulation(fhirPathEngine, count, expression);
     }
 
-    public Optional<Resource> evaluateResource(FHIRPathEngine fhirPathEngine, Resource resource) {
+    public Optional<Resource> evaluateResource(Resource resource) {
         List<Base> found = fhirPathEngine.evaluate(resource, expression);
 
         if (found.isEmpty())
@@ -41,11 +48,11 @@ public record MeasurePopulation(int count, ExpressionNode expression) {
 
     public MeasurePopulation updateWithResource(Resource resource) {
         int newCount = resource == null ? this.count : this.count + 1;
-        return new MeasurePopulation(newCount, expression);
+        return new MeasurePopulation(fhirPathEngine, newCount, expression);
     }
 
     public MeasurePopulation merge(MeasurePopulation other) {
-        return new MeasurePopulation(count + other.count, expression);
+        return new MeasurePopulation(fhirPathEngine, count + other.count, expression);
     }
 
     public MeasureReport.MeasureReportGroupPopulationComponent toReportGroupPopulation() {

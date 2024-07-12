@@ -1,7 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.Set;
@@ -19,22 +18,21 @@ import static java.util.Objects.requireNonNull;
  * @param componentExpressions holds one {@link ComponentExpression} for each component of the stratifier
  * @param populationsTemplate  holds {@link Populations} that defines the populations of the stratifier
  */
-public record StratifierReduceOp(List<ComponentExpression> componentExpressions, Populations populationsTemplate,
-                                 FHIRPathEngine fhirPathEngine)
+public record StratifierReduceOp(List<ComponentExpression> componentExpressions, Populations populationsTemplate)
         implements BiFunction<StratifierResult, Resource, StratifierResult> {
 
     public StratifierReduceOp {
         componentExpressions = List.copyOf(componentExpressions);
-        requireNonNull(fhirPathEngine);
+        requireNonNull(populationsTemplate);
     }
 
     @Override
     public StratifierResult apply(StratifierResult s, Resource resource) {
-        var newPopulation = populationsTemplate.copy().evaluatePopulations(fhirPathEngine, resource);
-        return s.mergeStratumComponents(evaluateStratifier(fhirPathEngine, resource), newPopulation);
+        var newPopulation = populationsTemplate.copy().evaluatePopulations(resource);
+        return s.mergeStratumComponents(evaluateStratifier(resource), newPopulation);
     }
 
-    private Set<StratumComponent> evaluateStratifier(FHIRPathEngine fhirPathEngine, Resource resource) {
-        return componentExpressions.stream().map(e -> e.evaluate(fhirPathEngine, resource)).collect(Collectors.toSet());
+    private Set<StratumComponent> evaluateStratifier(Resource resource) {
+        return componentExpressions.stream().map(e -> e.evaluate(resource)).collect(Collectors.toSet());
     }
 }

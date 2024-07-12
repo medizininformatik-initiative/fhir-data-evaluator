@@ -1,7 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -18,18 +17,16 @@ import static java.util.Objects.requireNonNull;
  * @param stratifierReduceOps holds one {@link StratifierReduceOp} for each stratifier in a group
  * @param populationsTemplate holds {@link Populations} that defines the populations of the group
  */
-public record GroupReduceOp(List<StratifierReduceOp> stratifierReduceOps, Populations populationsTemplate,
-                            FHIRPathEngine fhirPathEngine)
+public record GroupReduceOp(List<StratifierReduceOp> stratifierReduceOps, Populations populationsTemplate)
         implements BiFunction<GroupResult, Resource, GroupResult> {
 
     public GroupReduceOp {
         requireNonNull(stratifierReduceOps);
         requireNonNull(populationsTemplate);
-        requireNonNull(fhirPathEngine);
     }
 
     @Override
     public GroupResult apply(GroupResult groupResult, Resource resource) {
-        return groupResult.applyResource(fhirPathEngine, stratifierReduceOps, resource, populationsTemplate);
+        return groupResult.applyResource(stratifierReduceOps, resource, populationsTemplate);
     }
 }

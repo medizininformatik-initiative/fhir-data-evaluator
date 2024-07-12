@@ -3,7 +3,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -27,9 +26,9 @@ public record GroupResult(Populations populations, List<StratifierResult> strati
         return new GroupResult(populations, initialResults);
     }
 
-    public GroupResult applyResource(FHIRPathEngine fhirPathEngine, List<StratifierReduceOp> stratifierOperations, Resource resource, Populations populationsTemplate) {
+    public GroupResult applyResource(List<StratifierReduceOp> stratifierOperations, Resource resource, Populations populationsTemplate) {
         assert stratifierResults.size() == stratifierOperations.size();
-        var newPopulation = populations.merge(populationsTemplate.copy().evaluatePopulations(fhirPathEngine, resource));
+        var newPopulation = populations.merge(populationsTemplate.copy().evaluatePopulations(resource));
         return new GroupResult(newPopulation, applyEachStratifier(stratifierOperations, resource));
     }
 

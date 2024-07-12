@@ -2,7 +2,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +41,7 @@ public record Populations(InitialPopulation initialPopulation, Optional<MeasureP
      */
     public Populations copy() {
         return new Populations(
-                InitialPopulation.copyOf(initialPopulation),
+                initialPopulation,
                 measurePopulation.map(MeasurePopulation::shallowCopy),
                 observationPopulation.map(ObservationPopulation::shallowCopyOf));
     }
@@ -53,21 +52,19 @@ public record Populations(InitialPopulation initialPopulation, Optional<MeasureP
      * <p>
      * This will mutate the set of aggregated values of the {@link AggregateUniqueCount} of the {@link ObservationPopulation}.
      *
-     * @param fhirPathEngine the {@link FHIRPathEngine} to use to evaluate the {@link MeasurePopulation} and
-     *                       {@link ObservationPopulation}
-     * @param resource       the base resource to evaluate the {@link MeasurePopulation} on
+     * @param resource the base resource to evaluate the {@link MeasurePopulation} on
      * @return the updated {@link Populations}
      */
-    public Populations evaluatePopulations(FHIRPathEngine fhirPathEngine, Resource resource) {
+    public Populations evaluatePopulations(Resource resource) {
         Optional<MeasurePopulation> evaluatedMeasurePop = Optional.empty();
         Optional<ObservationPopulation> evaluatedObsPop = Optional.empty();
 
         if (measurePopulation.isPresent()) {
-            var measurePopResource = measurePopulation.get().evaluateResource(fhirPathEngine, resource);
+            var measurePopResource = measurePopulation.get().evaluateResource(resource);
             evaluatedMeasurePop = measurePopResource.map(measurePopulation.get()::updateWithResource).or(() -> measurePopulation);
 
             if (observationPopulation.isPresent()) {
-                evaluatedObsPop = measurePopResource.map(r -> observationPopulation.get().updateWithResource(r, fhirPathEngine))
+                evaluatedObsPop = measurePopResource.map(r -> observationPopulation.get().updateWithResource(r))
                         .or(() -> observationPopulation);
             }
         }
