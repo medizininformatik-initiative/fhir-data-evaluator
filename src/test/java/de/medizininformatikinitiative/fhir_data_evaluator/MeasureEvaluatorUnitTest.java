@@ -75,7 +75,7 @@ public class MeasureEvaluatorUnitTest {
                                                 .setCode(new CodeableConcept(COND_DEF_CODING)),
                                         new Measure.MeasureGroupStratifierComponentComponent()
                                                 .setCriteria(COND_STATUS_PATH)
-                                                .setCode(new CodeableConcept(STATUS_DEF_CODING))))
+                                                .setCode(new CodeableConcept(STATUS_DEF_CODING.toCoding()))))
                                 .setCode(new CodeableConcept(COND_DEF_CODING))))
                 .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
         Measure measure = new Measure().setGroup(List.of(measureGroup));

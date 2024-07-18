@@ -1,9 +1,9 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.PopulationI;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
-import org.hl7.fhir.r4.model.Quantity;
 
 import java.util.*;
 
@@ -19,27 +19,28 @@ import static java.util.Objects.requireNonNull;
  * @param code        the code of the stratifier if the stratifier consists of criteria and code
  * @param populations mutable map of the populations of each found set of values
  */
-public record StratifierResult(Optional<HashableCoding> code, Map<Set<StratumComponent>, Populations> populations) {
+public record StratifierResult<T extends PopulationI<T>>(Optional<HashableCoding> code, Map<Set<StratumComponent>, T> populations) {
 
     public StratifierResult {
         requireNonNull(code);
         requireNonNull(populations);
     }
 
-    public static StratifierResult initial(Measure.MeasureGroupStratifierComponent s) {
+    public static  <T extends PopulationI<T>>StratifierResult <T> initial(Measure.MeasureGroupStratifierComponent s, Class<T> type) {
         var code = s.hasCode() ? HashableCoding.ofFhirCoding(s.getCode().getCodingFirstRep()) : null;
-        return new StratifierResult(Optional.ofNullable(code), new HashMap<>());
+        return new StratifierResult<T>(Optional.ofNullable(code), new HashMap<>());
     }
 
     /**
      * Merges {@code components} and the corresponding {@code newPopulations} into the {@code StratifierResult} by
      * mutating it and then returns itself.
      *
-     * @param components the key of the populations to increment
+     * @param components        the key of the populations to increment
+     * @param newPopulations    the populations used to initialize or increment the strata
      * @return the mutated {@code StratifierResult} itself
      */
-    public StratifierResult mergeStratumComponents(Set<StratumComponent> components, Populations newPopulations) {
-        populations.merge(components, newPopulations, Populations::merge);
+    public StratifierResult<T> mergeStratumComponents(Set<StratumComponent> components, T newPopulations) {
+        populations.merge(components, newPopulations, T::merge);
         return this;
     }
 
@@ -52,12 +53,9 @@ public record StratifierResult(Optional<HashableCoding> code, Map<Set<StratumCom
         return reportStratifier;
     }
 
-    private static MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<StratumComponent>, Populations> entry) {
-        var populations = entry.getValue();
-        MeasureReport.StratifierGroupComponent stratum = new MeasureReport.StratifierGroupComponent()
-                .setPopulation(populations.toReportStratifierPopulations());
+    private static <T extends PopulationI<T>> MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<StratumComponent>, T> entry) {
 
-        populations.observationPopulation().ifPresent(op -> stratum.setMeasureScore(new Quantity(op.aggregateMethod().getScore())));
+        MeasureReport.StratifierGroupComponent stratum = entry.getValue().toReportStratifierGroupComponent();
 
         if (entry.getKey().size() == 1) {
             stratum.setValue(new CodeableConcept(entry.getKey().iterator().next().value().toCoding()));

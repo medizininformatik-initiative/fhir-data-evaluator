@@ -1,10 +1,17 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.AggregateUniqueCount;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasureAndObsPopulation;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasurePopulation;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
+import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Measure;
+import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,32 +37,64 @@ public class GroupEvaluator {
      * Evaluates {@code group}.
      *
      * @param group the group to evaluate
-     * @return a {@code Mono} of the {@code GroupResult}
+     * @return a {@code Mono} of the {@link MeasureReport.MeasureReportGroupComponent}
      * @throws IllegalArgumentException if the group doesn't have exactly one initial population
      */
-    public Mono<GroupResult> evaluateGroup(Measure.MeasureGroupComponent group) {
+    public Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroup(Measure.MeasureGroupComponent group) {
         var population = dataStore.getPopulation("/" +
                 findFhirInitialPopulation(group).getCriteria().getExpressionElement());
 
-        var populationsTemplate = createPopulationsTemplate(group);
-        var groupReduceOp = new GroupReduceOp(group.getStratifier().stream().map(s ->
-                new StratifierReduceOp(getComponentExpressions(s), populationsTemplate)).toList(),
-                populationsTemplate);
-
-        var initialStratifierResults = group.getStratifier().stream().map(StratifierResult::initial).toList();
-
-        return population.reduce(GroupResult.initial(initialStratifierResults, populationsTemplate.copy()), groupReduceOp);
-    }
-
-    private Populations createPopulationsTemplate(Measure.MeasureGroupComponent group) {
-        var measurePopulation = findMeasurePopulation(group);
-        var observationPopulation = findObservationPopulation(group);
-
-        if (measurePopulation.isEmpty() && observationPopulation.isPresent()) {
+        var measurePopulationExpression = findMeasurePopulationExpression(group);
+        var observationPopulationExpression = findObservationPopulationExpression(group);
+        if (measurePopulationExpression.isEmpty() && observationPopulationExpression.isPresent()) {
             throw new IllegalArgumentException("Group must not contain a Measure Observation without a Measure Population");
         }
 
-        return new Populations(InitialPopulation.ZERO, measurePopulation, observationPopulation);
+        if (measurePopulationExpression.isEmpty()) {
+            return evaluateGroupOfInitial(population, group);
+        }
+        if (observationPopulationExpression.isEmpty()) {
+            return evaluateGroupOfInitialAndMeasure(population, group, measurePopulationExpression.get());
+        }
+        // TODO java docs (especially for different GroupReduceOps)
+
+        return evaluateGroupOfInitialAndMeasureAndObs(population, group, measurePopulationExpression.get(), observationPopulationExpression.get());
+    }
+
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitial(Flux<Resource> population, Measure.MeasureGroupComponent group) {
+        var groupReduceOp = new GroupReduceOpInitial(group.getStratifier().stream().map(s ->
+                new StratifierReduceOp<InitialPopulation>(getComponentExpressions(s))).toList());
+
+        List<StratifierResult<InitialPopulation>> initialStratifierResults = group.getStratifier().stream().map(s ->
+                StratifierResult.initial(s, InitialPopulation.class)).toList();
+        return population.reduce(new GroupResult<>(InitialPopulation.ZERO, initialStratifierResults), groupReduceOp)
+                .map(GroupResult::toReportGroup);
+    }
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasure(Flux<Resource> population,
+                                                                                             Measure.MeasureGroupComponent group,
+                                                                                             ExpressionNode measurePopulationExpression) {
+        var groupReduceOp = new GroupReduceOpMeasure(group.getStratifier().stream().map(s ->
+                new StratifierReduceOp<InitialAndMeasurePopulation>(getComponentExpressions(s))).toList(),
+                measurePopulationExpression, fhirPathEngine);
+
+        List<StratifierResult<InitialAndMeasurePopulation>> initialStratifierResults = group.getStratifier().stream().map(s ->
+                StratifierResult.initial(s, InitialAndMeasurePopulation.class)).toList();
+        return population.reduce(new GroupResult<>(InitialAndMeasurePopulation.ZERO, initialStratifierResults), groupReduceOp)
+                .map(GroupResult::toReportGroup);
+    }
+
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasureAndObs(Flux<Resource> population,
+                                                                                                   Measure.MeasureGroupComponent group,
+                                                                                                   ExpressionNode measurePopulationExpression,
+                                                                                                   ExpressionNode observationPopulationExpression) {
+        var groupReduceOp = new GroupReduceOpObservation(group.getStratifier().stream().map(s ->
+                new StratifierReduceOp<InitialAndMeasureAndObsPopulation>(getComponentExpressions(s))).toList(),
+                measurePopulationExpression, observationPopulationExpression, fhirPathEngine);
+
+        List<StratifierResult<InitialAndMeasureAndObsPopulation>> initialStratifierResults = group.getStratifier().stream().map(s ->
+                StratifierResult.initial(s, InitialAndMeasureAndObsPopulation.class)).toList();
+        return population.reduce(new GroupResult<>(InitialAndMeasureAndObsPopulation.empty(), initialStratifierResults), groupReduceOp)
+                .map(GroupResult::toReportGroup);
     }
 
     private Measure.MeasureGroupPopulationComponent findFhirInitialPopulation(Measure.MeasureGroupComponent group) {
@@ -74,7 +113,7 @@ public class GroupEvaluator {
         return foundInitialPopulation;
     }
 
-    private Optional<MeasurePopulation> findMeasurePopulation(Measure.MeasureGroupComponent group) {
+    private Optional<ExpressionNode> findMeasurePopulationExpression(Measure.MeasureGroupComponent group) {
         var foundMeasurePopulations = findPopulationsByCode(group, MEASURE_POPULATION_CODING);
         if (foundMeasurePopulations.isEmpty()) {
             return Optional.empty();
@@ -89,10 +128,10 @@ public class GroupEvaluator {
             throw new IllegalArgumentException("Language of Measure Population was not equal to '%s'".formatted(FHIR_PATH));
         }
 
-        return Optional.of(new MeasurePopulation(fhirPathEngine, 0, fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression())));
+        return Optional.of(fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression()));
     }
 
-    private Optional<ObservationPopulation> findObservationPopulation(Measure.MeasureGroupComponent group) {
+    private Optional<ExpressionNode> findObservationPopulationExpression(Measure.MeasureGroupComponent group) {
         var foundObservationPopulations = findPopulationsByCode(group, MEASURE_OBSERVATION_CODING);
 
         if (foundObservationPopulations.isEmpty()) {
@@ -126,7 +165,7 @@ public class GroupEvaluator {
             throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCount.EXTENSION_VALUE));
         }
 
-        return Optional.of(new ObservationPopulation(fhirPathEngine, 0, fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()), new AggregateUniqueCount(new HashSet<>())));
+        return Optional.of(fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()));
     }
 
     private List<Measure.MeasureGroupPopulationComponent> findPopulationsByCode(Measure.MeasureGroupComponent group, HashableCoding code) {

@@ -3,6 +3,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.AggregateUniqueCount;
 import org.hl7.fhir.r4.context.IWorkerContext;
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.*;
@@ -16,12 +17,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,19 +43,11 @@ class GroupEvaluatorTest {
     static final String STATUS_VALUE_SYSTEM = "http://terminology.hl7.org/CodeSystem/condition-clinical";
     static final String STATUS_DEF_CODE = "clinical-status";
     static final String STATUS_DEF_SYSTEM = "http://fhir-evaluator/strat/system";
-    public static final Coding STATUS_DEF_CODING = new Coding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY);
-    public static final StratumComponent COND_VALUE_KEYPAIR = new StratumComponent(
-            HashableCoding.ofFhirCoding(COND_DEF_CODING),
-            new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE, SOME_DISPLAY));
-    public static final StratumComponent COND_VALUE_KEYPAIR_1 = new StratumComponent(
-            HashableCoding.ofFhirCoding(COND_DEF_CODING),
-            new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_1, SOME_DISPLAY));
-    public static final StratumComponent COND_VALUE_KEYPAIR_2 = new StratumComponent(
-            HashableCoding.ofFhirCoding(COND_DEF_CODING),
-            new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_2, SOME_DISPLAY));
-    public static final StratumComponent STATUS_VALUE_KEYPAIR = new StratumComponent(
-            new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY),
-            new HashableCoding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY));
+    public static final HashableCoding STATUS_DEF_CODING = new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY);
+    public static final HashableCoding COND_VALUE_CODING = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE, SOME_DISPLAY);
+    public static final HashableCoding COND_VALUE_CODING_1 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_1, SOME_DISPLAY);
+    public static final HashableCoding COND_VALUE_CODING_2 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_2, SOME_DISPLAY);
+    public static final HashableCoding STATUS_VALUE_CODING = new HashableCoding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY);
     static final String INITIAL_POPULATION_CODE = "initial-population";
     static final String MEASURE_POPULATION_CODE = "measure-population";
     static final String OBSERVATION_POPULATION_CODE = "measure-observation";
@@ -128,6 +121,22 @@ class GroupEvaluatorTest {
         Measure.MeasureGroupComponent measureGroup = new Measure.MeasureGroupComponent();
 
         return measureGroup.setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
+    }
+
+    private static MeasureReport.MeasureReportGroupPopulationComponent findPopulationByCode(MeasureReport.MeasureReportGroupComponent group, HashableCoding code) {
+        return group.getPopulation().stream().filter(population -> {
+            var codings = population.getCode().getCoding();
+
+            return code.equals(HashableCoding.ofFhirCoding(codings.get(0)));
+        }).toList().get(0);
+    }
+
+    private static MeasureReport.StratifierGroupPopulationComponent findPopulationByCode(MeasureReport.StratifierGroupComponent stratum, HashableCoding code) {
+        return stratum.getPopulation().stream().filter(population -> {
+            var codings = population.getCode().getCoding();
+
+            return code.equals(HashableCoding.ofFhirCoding(codings.get(0)));
+        }).toList().get(0);
     }
 
     @Nested
@@ -487,15 +496,15 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Test
@@ -510,15 +519,16 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Test
@@ -535,15 +545,16 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat(result.stratifierResults().get(0))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.ofInitial(new InitialPopulation(2)))
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(2);
 
                 }
 
@@ -561,17 +572,20 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat(result.stratifierResults().get(0))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR_1),
-                                            Populations.INITIAL_ONE,
-                                            Set.of(COND_VALUE_KEYPAIR_2),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(2);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING_1);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING_2);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(1), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Nested
@@ -588,15 +602,17 @@ class GroupEvaluatorTest {
                         var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                         assertThat(result).isNotNull();
-                        assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                        assertThat(result.stratifierResults().size()).isEqualTo(1);
-                        assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                        assertThat((result.stratifierResults().get(0)))
-                                .isEqualTo(
-                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                                Set.of(StratumComponent.ofFailedNoValueFound(COND_VALUE_KEYPAIR.code())),
-                                                Populations.INITIAL_ONE)
-                                        ));
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_NO_VALUE_FOUND);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
                     }
 
                     @Test
@@ -614,15 +630,16 @@ class GroupEvaluatorTest {
                         var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                         assertThat(result).isNotNull();
-                        assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                        assertThat(result.stratifierResults().size()).isEqualTo(1);
-                        assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                        assertThat((result.stratifierResults().get(0)))
-                                .isEqualTo(
-                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                                Set.of(StratumComponent.ofFailedTooManyValues(COND_VALUE_KEYPAIR.code())),
-                                                Populations.INITIAL_ONE)
-                                        ));
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_TOO_MANY_VALUES);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
                     }
 
                     @Test
@@ -637,15 +654,16 @@ class GroupEvaluatorTest {
                         var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                         assertThat(result).isNotNull();
-                        assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                        assertThat(result.stratifierResults().size()).isEqualTo(1);
-                        assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                        assertThat((result.stratifierResults().get(0)))
-                                .isEqualTo(
-                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                                Set.of(StratumComponent.ofFailedInvalidType(COND_VALUE_KEYPAIR.code())),
-                                                Populations.INITIAL_ONE)
-                                        ));
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_INVALID_TYPE);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
                     }
 
                     @Test
@@ -660,15 +678,16 @@ class GroupEvaluatorTest {
                         var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                         assertThat(result).isNotNull();
-                        assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                        assertThat(result.stratifierResults().size()).isEqualTo(1);
-                        assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                        assertThat((result.stratifierResults().get(0)))
-                                .isEqualTo(
-                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                                Set.of(StratumComponent.ofFailedMissingFields(COND_VALUE_KEYPAIR.code())),
-                                                Populations.INITIAL_ONE)
-                                        ));
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_MISSING_FIELDS);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
                     }
 
                     @Test
@@ -683,15 +702,16 @@ class GroupEvaluatorTest {
                         var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                         assertThat(result).isNotNull();
-                        assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                        assertThat(result.stratifierResults().size()).isEqualTo(1);
-                        assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                        assertThat((result.stratifierResults().get(0)))
-                                .isEqualTo(
-                                        new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                                Set.of(StratumComponent.ofFailedMissingFields(COND_VALUE_KEYPAIR.code())),
-                                                Populations.INITIAL_ONE)
-                                        ));
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_MISSING_FIELDS);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
                     }
                 }
             }
@@ -712,20 +732,24 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(2);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat(result.stratifierResults().get(1).populations()).isNotNull();
-                    assertThat(result.stratifierResults())
-                            .containsExactly(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ),
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(2);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(1).getStratum().size()).isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(1).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(1).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(1).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Test
@@ -735,26 +759,31 @@ class GroupEvaluatorTest {
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
                                     new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING)),
-                                    new Measure.MeasureGroupStratifierComponent().setCriteria(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING))))
+                                    new Measure.MeasureGroupStratifierComponent().setCriteria(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING.toCoding()))))
                             .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
                     GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(2);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat(result.stratifierResults().get(1).populations()).isNotNull();
-                    assertThat(result.stratifierResults())
-                            .containsExactly(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ),
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(STATUS_DEF_CODING)), Map.of(
-                                            Set.of(STATUS_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(2);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(1).getStratum().size()).isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(1).getCode().get(0).getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(STATUS_DEF_CODING.toCoding()));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(1).getStratum().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(STATUS_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(1).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
             }
 
@@ -773,7 +802,7 @@ class GroupEvaluatorTest {
                                     new Measure.MeasureGroupStratifierComponent()
                                             .setComponent(List.of(
                                                     new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING)),
-                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING))))
+                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING.toCoding()))))
                                             .setCode(new CodeableConcept(COND_DEF_CODING))))
                             .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
                     GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
@@ -781,15 +810,21 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR, STATUS_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().get(0).getComponent().size()).isEqualTo(2);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(STATUS_DEF_CODING);
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(STATUS_VALUE_CODING);
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Test
@@ -808,46 +843,21 @@ class GroupEvaluatorTest {
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(
-                                                    COND_VALUE_KEYPAIR,
-                                                    new StratumComponent(
-                                                            new HashableCoding(COND_DEF_SYSTEM, "some-other-code", SOME_DISPLAY),
-                                                            COND_VALUE_KEYPAIR.value())),
-                                            Populations.INITIAL_ONE)
-                                    ));
-                }
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().get(0).getComponent().size()).isEqualTo(2);
 
-                @Test
-                public void test_oneStratifierElement_twoSameComponents() { // TODO this is actually undefined behaviour I think
-                    when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
-                    Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
-                            .setStratifier(List.of(
-                                    new Measure.MeasureGroupStratifierComponent()
-                                            .setComponent(List.of(
-                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING)),
-                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
-                                            .setCode(new CodeableConcept(COND_DEF_CODING))))
-                            .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-                    GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
-
-                    var result = groupEvaluator.evaluateGroup(measureGroup).block();
-
-                    assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                            Set.of(COND_VALUE_KEYPAIR),
-                                            Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(new HashableCoding(COND_DEF_SYSTEM, "some-other-code", SOME_DISPLAY));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(COND_VALUE_CODING);
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
                 @Test
@@ -879,25 +889,64 @@ class GroupEvaluatorTest {
                                     new Measure.MeasureGroupStratifierComponent()
                                             .setComponent(List.of(
                                                     new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING)),
-                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING))))))
+                                                    new Measure.MeasureGroupStratifierComponentComponent(COND_STATUS_PATH).setCode(new CodeableConcept(STATUS_DEF_CODING.toCoding()))))))
                             .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
                     GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
                     var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                     assertThat(result).isNotNull();
-                    assertThat(result.populations().initialPopulation().count()).isEqualTo(4);
-                    assertThat(result.stratifierResults().size()).isEqualTo(1);
-                    assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+                    assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(4);
+                    assertThat(result.getStratifier().size()).isEqualTo(1);
+                    assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(4);
+                    assertThat(result.getStratifier().get(0).getStratum().get(0).getComponent().size()).isEqualTo(2);
+                    assertThat(result.getStratifier().get(0).getStratum().get(1).getComponent().size()).isEqualTo(2);
+                    assertThat(result.getStratifier().get(0).getStratum().get(2).getComponent().size()).isEqualTo(2);
+                    assertThat(result.getStratifier().get(0).getStratum().get(3).getComponent().size()).isEqualTo(2);
 
-                    assertThat((result.stratifierResults().get(0)))
-                            .isEqualTo(
-                                    new StratifierResult(Optional.empty(), Map.of(
-                                            Set.of(condValueKeypair_1, statusValueKeypair_1), Populations.INITIAL_ONE,
-                                            Set.of(condValueKeypair_1, statusValueKeypair_2), Populations.INITIAL_ONE,
-                                            Set.of(condValueKeypair_2, statusValueKeypair_1), Populations.INITIAL_ONE,
-                                            Set.of(condValueKeypair_2, statusValueKeypair_2), Populations.INITIAL_ONE)
-                                    ));
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_1.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_1.value());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_2.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_2.value());
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(1).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_2.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(1).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_2.value());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(1).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_1.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(1).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_1.value());
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(2).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_2.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(2).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_2.value());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(2).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_2.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(2).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_2.value());
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
+
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(3).getComponent().get(0).getCode().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_1.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(3).getComponent().get(0).getValue().getCodingFirstRep()))
+                            .isEqualTo(statusValueKeypair_1.value());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(3).getComponent().get(1).getCode().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_1.code());
+                    assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(3).getComponent().get(1).getValue().getCodingFirstRep()))
+                            .isEqualTo(condValueKeypair_1.value());
+                    assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                            .isEqualTo(1);
                 }
 
 
@@ -945,15 +994,17 @@ class GroupEvaluatorTest {
                 var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                 assertThat(result).isNotNull();
-                assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                assertThat(result.stratifierResults().size()).isEqualTo(1);
-                assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                assertThat((result.stratifierResults().get(0)))
-                        .isEqualTo(
-                                new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING)), Map.of(
-                                        Set.of(QUANTITY_VALUE_KEYPAIR),
-                                        Populations.INITIAL_ONE)
-                                ));
+                assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                assertThat(result.getStratifier().size()).isEqualTo(1);
+                assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                        .isEqualTo(HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING));
+                assertThat(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep().getCode())
+                        .isEqualTo(QUANTITY_VALUE_KEYPAIR.value().code());
+                assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                        .isEqualTo(1);
+
             }
 
         }
@@ -973,15 +1024,16 @@ class GroupEvaluatorTest {
                 var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
                 assertThat(result).isNotNull();
-                assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-                assertThat(result.stratifierResults().size()).isEqualTo(1);
-                assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-                assertThat((result.stratifierResults().get(0)))
-                        .isEqualTo(
-                                new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(GENDER_DEF_CODING)), Map.of(
-                                        Set.of(GENDER_VALUE_KEYPAIR),
-                                        Populations.INITIAL_ONE)
-                                ));
+                assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                assertThat(result.getStratifier().size()).isEqualTo(1);
+                assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+                assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                        .isEqualTo(HashableCoding.ofFhirCoding(GENDER_DEF_CODING));
+                assertThat(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep().getCode())
+                        .isEqualTo(GENDER_VALUE_KEYPAIR.value().code());
+                assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                        .isEqualTo(1);
             }
         }
 
@@ -998,16 +1050,16 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-            assertThat((result.stratifierResults().get(0)))
-                    .isEqualTo(
-                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(GENDER_DEF_CODING)), Map.of(
-                                    Set.of(new StratumComponent(HashableCoding.ofFhirCoding(GENDER_DEF_CODING),
-                                            HashableCoding.FAIL_NO_VALUE_FOUND)),
-                                    Populations.INITIAL_ONE)
-                            ));
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(GENDER_DEF_CODING));
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                    .isEqualTo(FAIL_NO_VALUE_FOUND);
+            assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                    .isEqualTo(1);
         }
     }
 
@@ -1034,15 +1086,17 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-            assertThat((result.stratifierResults().get(0)))
-                    .isEqualTo(
-                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                    Set.of(COND_CODE_EXISTS_TRUE),
-                                    Populations.INITIAL_ONE)
-                            ));
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            assertThat(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep().getCode())
+                    .isEqualTo(COND_CODE_EXISTS_TRUE.value().code());
+            assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                    .isEqualTo(1);
+
         }
 
         @Test
@@ -1057,15 +1111,16 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
-            assertThat((result.stratifierResults().get(0)))
-                    .isEqualTo(
-                            new StratifierResult(Optional.of(HashableCoding.ofFhirCoding(COND_DEF_CODING)), Map.of(
-                                    Set.of(COND_CODE_EXISTS_FALSE),
-                                    Populations.INITIAL_ONE)
-                            ));
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            assertThat(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep().getCode())
+                    .isEqualTo(COND_CODE_EXISTS_FALSE.value().code());
+            assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                    .isEqualTo(1);
         }
     }
 
@@ -1095,23 +1150,23 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
-            assertThat(result.populations().measurePopulation()).isPresent();
-            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation()).isPresent();
-            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
 
-            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
-            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
-            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
-            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
-            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result).isNotNull();
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(result.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var firstStratum = result.getStratifier().get(0).getStratum().get(0);
+            assertThat(HashableCoding.ofFhirCoding(firstStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING);
+            assertThat(findPopulationByCode(firstStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
         }
 
         @Test
@@ -1132,24 +1187,23 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
-            assertThat(result.populations().measurePopulation()).isPresent();
-            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation()).isPresent();
-            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(2);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
 
-            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
-            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
-            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
-            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
-            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(2);
+            assertThat(result).isNotNull();
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(result.getMeasureScore().getValue()).isEqualTo(new BigDecimal(2));
 
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var firstStratum = result.getStratifier().get(0).getStratum().get(0);
+            assertThat(HashableCoding.ofFhirCoding(firstStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING);
+            assertThat(findPopulationByCode(firstStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(2));
         }
 
         @Test
@@ -1171,28 +1225,27 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(3);
-            assertThat(result.populations().measurePopulation()).isPresent();
-            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation()).isPresent();
-            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(result, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(result.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
 
-            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
-            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
-            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(3);
-            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
-            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
-            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var firstStratum = result.getStratifier().get(0).getStratum().get(0);
+            assertThat(HashableCoding.ofFhirCoding(firstStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING);
+            assertThat(findPopulationByCode(firstStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
         }
 
 
         @Test
-        @DisplayName("Two Conditions with same value and one Condition with no value, leading to a different Measure Observation Population")
+        @DisplayName("Two Conditions with same value and one Condition with no value, leading to a different Measure Observation Population count")
         public void test_twoSameValues_withDifferentObservationPopulation() {
             when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
                     getConditionWithSubject(UNIQUE_VAL_1),
@@ -1210,23 +1263,22 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(3);
-            assertThat(result.populations().measurePopulation()).isPresent();
-            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(3);
-            assertThat(result.populations().observationPopulation()).isPresent();
-            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations()).isNotNull();
+            assertThat(result.getStratifier().size()).isEqualTo(1);
+            assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
 
-            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
-            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR));
-            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(3);
-            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
-            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(3);
-            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
-            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(result, MEASURE_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(result, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(result.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
+
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var firstStratum = result.getStratifier().get(0).getStratum().get(0);
+            assertThat(HashableCoding.ofFhirCoding(firstStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING);
+            assertThat(findPopulationByCode(firstStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(3);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
         }
 
         @Test
@@ -1251,32 +1303,28 @@ class GroupEvaluatorTest {
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
             assertThat(result).isNotNull();
-            assertThat(result.populations().initialPopulation().count()).isEqualTo(2);
-            assertThat(result.populations().measurePopulation()).isPresent();
-            assertThat(result.populations().measurePopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation()).isPresent();
-            assertThat(result.populations().observationPopulation().get().count()).isEqualTo(2);
-            assertThat(result.populations().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
-            assertThat(result.stratifierResults().size()).isEqualTo(1);
-            assertThat(result.stratifierResults().get(0).populations().size()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_POPULATION_CODING).getCount()).isEqualTo(2);
+            assertThat(findPopulationByCode(result, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(2);
+            assertThat(result.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
 
-            var firstStratum = result.stratifierResults().get(0).populations().entrySet().iterator().next();
-            assertThat(firstStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR_1));
-            assertThat(firstStratum.getValue().initialPopulation().count()).isEqualTo(1);
-            assertThat(firstStratum.getValue().measurePopulation()).isPresent();
-            assertThat(firstStratum.getValue().measurePopulation().get().count()).isEqualTo(1);
-            assertThat(firstStratum.getValue().observationPopulation()).isPresent();
-            assertThat(firstStratum.getValue().observationPopulation().get().count()).isEqualTo(1);
-            assertThat(firstStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var firstStratum = result.getStratifier().get(0).getStratum().get(0);
+            assertThat(HashableCoding.ofFhirCoding(firstStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING_1);
+            assertThat(findPopulationByCode(firstStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(findPopulationByCode(firstStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(1);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
 
-            var secondStratum = result.stratifierResults().get(0).populations().entrySet().stream().skip(1).iterator().next();
-            assertThat(secondStratum.getKey()).isEqualTo(Set.of(COND_VALUE_KEYPAIR_2));
-            assertThat(secondStratum.getValue().initialPopulation().count()).isEqualTo(1);
-            assertThat(secondStratum.getValue().measurePopulation()).isPresent();
-            assertThat(secondStratum.getValue().measurePopulation().get().count()).isEqualTo(1);
-            assertThat(secondStratum.getValue().observationPopulation()).isPresent();
-            assertThat(secondStratum.getValue().observationPopulation().get().count()).isEqualTo(1);
-            assertThat(secondStratum.getValue().observationPopulation().get().aggregateMethod().getScore()).isEqualTo(1);
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+            var secondStratum = result.getStratifier().get(0).getStratum().get(1);
+            assertThat(HashableCoding.ofFhirCoding(secondStratum.getValue().getCodingFirstRep())).isEqualTo(COND_VALUE_CODING_2);
+            assertThat(findPopulationByCode(secondStratum, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(findPopulationByCode(secondStratum, MEASURE_POPULATION_CODING).getCount()).isEqualTo(1);
+            assertThat(findPopulationByCode(secondStratum, MEASURE_OBSERVATION_CODING).getCount()).isEqualTo(1);
+            assertThat(firstStratum.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
         }
     }
 }
