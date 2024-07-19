@@ -5,6 +5,7 @@ import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,7 +21,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MeasureEvaluatorUnitTest {
 
-    static final FHIRPathEngine pathEngine = createPathEngine();
+    static FHIRPathEngine pathEngine;
+
+    @BeforeEach
+    void setUp() {
+        pathEngine = createPathEngine();
+    }
 
     @Mock
     DataStore dataStore;

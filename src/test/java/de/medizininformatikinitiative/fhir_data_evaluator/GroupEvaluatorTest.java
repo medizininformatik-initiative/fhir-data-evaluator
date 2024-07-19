@@ -9,6 +9,7 @@ import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.*;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,31 +39,34 @@ class GroupEvaluatorTest {
     static final String COND_DEF_CODE = "cond-def-code";
     static final String COND_DEF_SYSTEM = "cond-def-sys";
     static final String SOME_DISPLAY = "some-display";
-    public static final Coding COND_DEF_CODING = new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY);
+    static final Coding COND_DEF_CODING = new Coding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY);
     static final String STATUS_VALUE_CODE = "active";
     static final String STATUS_VALUE_SYSTEM = "http://terminology.hl7.org/CodeSystem/condition-clinical";
     static final String STATUS_DEF_CODE = "clinical-status";
     static final String STATUS_DEF_SYSTEM = "http://fhir-evaluator/strat/system";
-    public static final HashableCoding STATUS_DEF_CODING = new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY);
-    public static final HashableCoding COND_VALUE_CODING = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE, SOME_DISPLAY);
-    public static final HashableCoding COND_VALUE_CODING_1 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_1, SOME_DISPLAY);
-    public static final HashableCoding COND_VALUE_CODING_2 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_2, SOME_DISPLAY);
-    public static final HashableCoding STATUS_VALUE_CODING = new HashableCoding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY);
+    static final HashableCoding STATUS_DEF_CODING = new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY);
+    static final HashableCoding COND_VALUE_CODING = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE, SOME_DISPLAY);
+    static final HashableCoding COND_VALUE_CODING_1 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_1, SOME_DISPLAY);
+    static final HashableCoding COND_VALUE_CODING_2 = new HashableCoding(COND_VALUE_SYSTEM, COND_VALUE_CODE_2, SOME_DISPLAY);
+    static final HashableCoding STATUS_VALUE_CODING = new HashableCoding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY);
     static final String INITIAL_POPULATION_CODE = "initial-population";
     static final String MEASURE_POPULATION_CODE = "measure-population";
     static final String OBSERVATION_POPULATION_CODE = "measure-observation";
     static final String POPULATION_SYSTEM = "http://terminology.hl7.org/CodeSystem/measure-population";
-    static final FHIRPathEngine pathEngine = createPathEngine();
-    public static final String INITIAL_POPULATION_LANGUAGE = "text/x-fhir-query";
-    public static final String FHIR_PATH = "text/fhirpath";
-    public static final String MEASURE_POPULATION_ID = "measure-population-identifier";
+    static final String INITIAL_POPULATION_LANGUAGE = "text/x-fhir-query";
+    static final String FHIR_PATH = "text/fhirpath";
+    static final String MEASURE_POPULATION_ID = "measure-population-identifier";
     static final String CRITERIA_REFERENCE_URL = "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference";
     static final String MEASURE_POPULATION_PATH = "Condition";
     static final String OBSERVATION_POPULATION_PATH = "Condition.subject.reference";
-    final String CRITERIA_REFERENCE_VALUE = "measure-population-identifier";
+    static final String CRITERIA_REFERENCE_VALUE = "measure-population-identifier";
+
+    static FHIRPathEngine pathEngine;
+    static GroupEvaluator groupEvaluator;
 
     @Mock
     DataStore dataStore;
+
 
     private static Expression expressionOfPath(String expStr) {
         Expression expression = new Expression();
@@ -139,6 +143,12 @@ class GroupEvaluatorTest {
         }).toList().get(0);
     }
 
+    @BeforeEach
+    void setUp() {
+        pathEngine = createPathEngine();
+        groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+    }
+
     @Nested
     class ExceptionTests {
 
@@ -148,7 +158,6 @@ class GroupEvaluatorTest {
                     getInitialPopulation(CONDITION_QUERY).setCode(new CodeableConcept()
                             .addCoding(new Coding().setSystem(POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE))
                             .addCoding(new Coding().setSystem(POPULATION_SYSTEM).setCode(INITIAL_POPULATION_CODE)))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -158,7 +167,6 @@ class GroupEvaluatorTest {
         @Test
         public void test_twoInitialPopulations() {
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of(getInitialPopulation(CONDITION_QUERY), getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -168,7 +176,6 @@ class GroupEvaluatorTest {
         @Test
         public void test_noInitialPopulations() {
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setPopulation(List.of());
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -181,7 +188,6 @@ class GroupEvaluatorTest {
                     getInitialPopulation(CONDITION_QUERY)
                             .setCriteria(new Expression().setExpressionElement(new StringType(CONDITION_QUERY))
                                     .setLanguage("some-wrong-language"))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -197,7 +203,6 @@ class GroupEvaluatorTest {
                                     .setComponent(List.of(new Measure.MeasureGroupStratifierComponentComponent(COND_CODE_PATH).setCode(null)))
                                     .setCode(new CodeableConcept(COND_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -216,7 +221,6 @@ class GroupEvaluatorTest {
                                                     .addCoding(COND_DEF_CODING))))
                                     .setCode(new CodeableConcept(COND_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -233,7 +237,6 @@ class GroupEvaluatorTest {
                                                     .setCode(new CodeableConcept().addCoding(COND_DEF_CODING))))
                                     .setCode(new CodeableConcept(COND_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -249,7 +252,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getMeasurePopulation(MEASURE_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -265,7 +267,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH)
                                     .setCriteria(new Expression().setExpression(MEASURE_POPULATION_PATH).setLanguage("some-other-language"))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -280,7 +281,6 @@ class GroupEvaluatorTest {
                     .setPopulation(List.of(
                             getInitialPopulation(CONDITION_QUERY),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -297,7 +297,6 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -314,7 +313,6 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setCriteria(new Expression().setExpression(MEASURE_POPULATION_PATH).setLanguage("some-other-language"))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -332,7 +330,6 @@ class GroupEvaluatorTest {
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -352,7 +349,6 @@ class GroupEvaluatorTest {
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -371,7 +367,6 @@ class GroupEvaluatorTest {
                                     .setExtension(List.of(
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL)))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -390,7 +385,6 @@ class GroupEvaluatorTest {
                                     .setExtension(List.of(
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType("some-other-value"))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -408,7 +402,6 @@ class GroupEvaluatorTest {
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -428,7 +421,6 @@ class GroupEvaluatorTest {
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -447,7 +439,6 @@ class GroupEvaluatorTest {
                                     .setExtension(List.of(
                                             new Extension(AggregateUniqueCount.EXTENSION_URL),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -466,7 +457,6 @@ class GroupEvaluatorTest {
                                     .setExtension(List.of(
                                             new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType("some-value")),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -862,20 +852,20 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_twoDifferentComponents_twoDifferentResultValuesEach() {
-                    final CodeableConcept condCoding1 = new CodeableConcept().addCoding(new Coding().setSystem(COND_VALUE_SYSTEM).setCode("cond-code-value-1"));
-                    final CodeableConcept condCoding2 = new CodeableConcept().addCoding(new Coding().setSystem(COND_VALUE_SYSTEM).setCode("cond-code-value-2"));
-                    final CodeableConcept statusCoding2 = new CodeableConcept().addCoding(new Coding().setSystem(STATUS_VALUE_SYSTEM).setCode("status-value-1"));
-                    final CodeableConcept statusCoding1 = new CodeableConcept().addCoding(new Coding().setSystem(STATUS_VALUE_SYSTEM).setCode("status-value-2"));
-                    final StratumComponent condValueKeypair_1 = new StratumComponent(
+                    CodeableConcept condCoding1 = new CodeableConcept().addCoding(new Coding().setSystem(COND_VALUE_SYSTEM).setCode("cond-code-value-1"));
+                    CodeableConcept condCoding2 = new CodeableConcept().addCoding(new Coding().setSystem(COND_VALUE_SYSTEM).setCode("cond-code-value-2"));
+                    CodeableConcept statusCoding2 = new CodeableConcept().addCoding(new Coding().setSystem(STATUS_VALUE_SYSTEM).setCode("status-value-1"));
+                    CodeableConcept statusCoding1 = new CodeableConcept().addCoding(new Coding().setSystem(STATUS_VALUE_SYSTEM).setCode("status-value-2"));
+                    StratumComponent condValueKeypair_1 = new StratumComponent(
                             new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY),
                             new HashableCoding(COND_VALUE_SYSTEM, "cond-code-value-1", SOME_DISPLAY));
-                    final StratumComponent condValueKeypair_2 = new StratumComponent(
+                    StratumComponent condValueKeypair_2 = new StratumComponent(
                             new HashableCoding(COND_DEF_SYSTEM, COND_DEF_CODE, SOME_DISPLAY),
                             new HashableCoding(COND_VALUE_SYSTEM, "cond-code-value-2", SOME_DISPLAY));
-                    final StratumComponent statusValueKeypair_1 = new StratumComponent(
+                    StratumComponent statusValueKeypair_1 = new StratumComponent(
                             new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY),
                             new HashableCoding(STATUS_VALUE_SYSTEM, "status-value-1", SOME_DISPLAY));
-                    final StratumComponent statusValueKeypair_2 = new StratumComponent(
+                    StratumComponent statusValueKeypair_2 = new StratumComponent(
                             new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY),
                             new HashableCoding(STATUS_VALUE_SYSTEM, "status-value-2", SOME_DISPLAY));
 
@@ -963,8 +953,8 @@ class GroupEvaluatorTest {
         static final Expression GENDER_PATH = expressionOfPath("Patient.gender");
         static final String GENDER_DEF_SYSTEM = "gender-def-system";
         static final String GENDER_DEF_CODE = "gender-evaluation-code";
-        public static final Coding GENDER_DEF_CODING = new Coding(GENDER_DEF_SYSTEM, GENDER_DEF_CODE, SOME_DISPLAY);
-        public static final StratumComponent GENDER_VALUE_KEYPAIR = new StratumComponent(
+        static final Coding GENDER_DEF_CODING = new Coding(GENDER_DEF_SYSTEM, GENDER_DEF_CODE, SOME_DISPLAY);
+        static final StratumComponent GENDER_VALUE_KEYPAIR = new StratumComponent(
                 HashableCoding.ofFhirCoding(GENDER_DEF_CODING),
                 HashableCoding.ofSingleCodeValue(GENDER.toCode()));
 
@@ -977,8 +967,8 @@ class GroupEvaluatorTest {
             static final Expression VALUE_PATH = expressionOfPath("Observation.value.code");
             static final String QUANTITY_DEF_SYSTEM = "quantity-def-system";
             static final String QUANTITY_DEF_CODE = "quantity-evaluation-code";
-            public static final Coding QUANTITY_DEF_CODING = new Coding(QUANTITY_DEF_SYSTEM, QUANTITY_DEF_CODE, SOME_DISPLAY);
-            public static final StratumComponent QUANTITY_VALUE_KEYPAIR = new StratumComponent(
+            static final Coding QUANTITY_DEF_CODING = new Coding(QUANTITY_DEF_SYSTEM, QUANTITY_DEF_CODE, SOME_DISPLAY);
+            static final StratumComponent QUANTITY_VALUE_KEYPAIR = new StratumComponent(
                     HashableCoding.ofFhirCoding(QUANTITY_DEF_CODING),
                     HashableCoding.ofSingleCodeValue(NG_ML));
 
@@ -1045,7 +1035,6 @@ class GroupEvaluatorTest {
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(GENDER_PATH).setCode(new CodeableConcept(GENDER_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(PATIENT_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1081,7 +1070,6 @@ class GroupEvaluatorTest {
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_EXISTS_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1106,7 +1094,6 @@ class GroupEvaluatorTest {
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_EXISTS_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
                     .setPopulation(List.of(getInitialPopulation(CONDITION_QUERY)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1127,7 +1114,6 @@ class GroupEvaluatorTest {
     @Nested
     @DisplayName("Test Unique Count")
     class UniqueCount {
-
         static final String UNIQUE_VAL_1 = "val-1";
         static final String UNIQUE_VAL_2 = "val-2";
 
@@ -1145,7 +1131,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1182,7 +1167,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1220,7 +1204,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation("Condition.where(clinicalStatus.exists())"),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1258,7 +1241,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 
@@ -1298,7 +1280,6 @@ class GroupEvaluatorTest {
                             getInitialPopulation(CONDITION_QUERY),
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             getObservationPopulation(OBSERVATION_POPULATION_PATH)));
-            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
 
             var result = groupEvaluator.evaluateGroup(measureGroup).block();
 

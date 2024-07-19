@@ -1,6 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.PopulationI;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Resource;
 
@@ -10,19 +10,19 @@ import java.util.stream.IntStream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Holds {@link PopulationI}s and {@link StratifierResult}s of one group.
+ * Holds {@link Population}s and {@link StratifierResult}s of one group.
  *
  * @param populations       the count of all resources of the group without any stratification
  * @param stratifierResults holds the results of each stratifier
  */
-public record GroupResult<T extends PopulationI<T>>(T populations, List<StratifierResult<T>> stratifierResults) {
+public record GroupResult<T extends Population<T>>(T populations, List<StratifierResult<T>> stratifierResults) {
 
     public GroupResult {
         requireNonNull(populations);
         stratifierResults = List.copyOf(stratifierResults);
     }
 
-    public static <T extends PopulationI<T>> GroupResult<T> initial(List<StratifierResult<T>> initialResults, T populations) {
+    public static <T extends Population<T>> GroupResult<T> initial(T populations, List<StratifierResult<T>> initialResults) {
         return new GroupResult<T>(populations, initialResults);
     }
 

@@ -2,7 +2,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
 import org.hl7.fhir.r4.model.MeasureReport;
 
-import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Represents a collection of populations containing the initial population and measure population without the measure observation
@@ -14,7 +14,7 @@ import java.util.LinkedList;
  * @param measurePopulation the measure population
  */
 public record InitialAndMeasurePopulation(InitialPopulation initialPopulation, MeasurePopulation measurePopulation)
-        implements PopulationI<InitialAndMeasurePopulation> {
+        implements Population<InitialAndMeasurePopulation> {
     public static InitialAndMeasurePopulation ZERO = new InitialAndMeasurePopulation(InitialPopulation.ZERO,
             MeasurePopulation.ZERO);
 
@@ -27,21 +27,16 @@ public record InitialAndMeasurePopulation(InitialPopulation initialPopulation, M
 
     @Override
     public MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent() {
-        var populations = new LinkedList<MeasureReport.StratifierGroupPopulationComponent>();
-
-        populations.add(initialPopulation.toReportStratifierPopulation());
-        populations.add(measurePopulation.toReportStratifierPopulation());
-
-        return new MeasureReport.StratifierGroupComponent().setPopulation(populations);
+        return new MeasureReport.StratifierGroupComponent().setPopulation(
+                List.of(initialPopulation.toReportStratifierPopulation(),
+                        measurePopulation.toReportStratifierPopulation()));
     }
 
     @Override
     public MeasureReport.MeasureReportGroupComponent toReportGroupComponent() {
-        var populations = new LinkedList<MeasureReport.MeasureReportGroupPopulationComponent>();
-
-        populations.add(initialPopulation.toReportGroupPopulation());
-        populations.add(measurePopulation.toReportGroupPopulation());
-
-        return new MeasureReport.MeasureReportGroupComponent().setPopulation(populations);
+        return new MeasureReport.MeasureReportGroupComponent().setPopulation(
+                List.of(initialPopulation.toReportGroupPopulation(),
+                        measurePopulation.toReportGroupPopulation())
+        );
     }
 }

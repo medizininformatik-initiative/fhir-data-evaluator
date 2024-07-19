@@ -1,6 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.PopulationI;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
@@ -19,14 +19,14 @@ import static java.util.Objects.requireNonNull;
  * @param code        the code of the stratifier if the stratifier consists of criteria and code
  * @param populations mutable map of the populations of each found set of values
  */
-public record StratifierResult<T extends PopulationI<T>>(Optional<HashableCoding> code, Map<Set<StratumComponent>, T> populations) {
+public record StratifierResult<T extends Population<T>>(Optional<HashableCoding> code, Map<Set<StratumComponent>, T> populations) {
 
     public StratifierResult {
         requireNonNull(code);
         requireNonNull(populations);
     }
 
-    public static  <T extends PopulationI<T>>StratifierResult <T> initial(Measure.MeasureGroupStratifierComponent s, Class<T> type) {
+    public static  <T extends Population<T>>StratifierResult <T> initial(Measure.MeasureGroupStratifierComponent s, Class<T> type) {
         var code = s.hasCode() ? HashableCoding.ofFhirCoding(s.getCode().getCodingFirstRep()) : null;
         return new StratifierResult<T>(Optional.ofNullable(code), new HashMap<>());
     }
@@ -53,7 +53,7 @@ public record StratifierResult<T extends PopulationI<T>>(Optional<HashableCoding
         return reportStratifier;
     }
 
-    private static <T extends PopulationI<T>> MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<StratumComponent>, T> entry) {
+    private static <T extends Population<T>> MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<StratumComponent>, T> entry) {
 
         MeasureReport.StratifierGroupComponent stratum = entry.getValue().toReportStratifierGroupComponent();
 

@@ -1,6 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.PopulationI;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import org.apache.commons.lang3.function.TriFunction;
 import org.hl7.fhir.r4.model.Resource;
 
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  *
  * @param componentExpressions holds one {@link ComponentExpression} for each component of the stratifier
  */
-public record StratifierReduceOp<T extends PopulationI<T>>(List<ComponentExpression> componentExpressions)
+public record StratifierReduceOp<T extends Population<T>>(List<ComponentExpression> componentExpressions)
         implements TriFunction<StratifierResult<T>, Resource, T, StratifierResult<T>> {
 
     public StratifierReduceOp {

@@ -3,7 +3,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
 
-import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Represents a collection of populations containing the initial population, measure population and measure observation
@@ -18,7 +18,7 @@ import java.util.LinkedList;
 public record InitialAndMeasureAndObsPopulation(InitialPopulation initialPopulation,
                                                 MeasurePopulation measurePopulation,
                                                 ObservationPopulation observationPopulation)
-        implements PopulationI<InitialAndMeasureAndObsPopulation> {
+        implements Population<InitialAndMeasureAndObsPopulation> {
 
     public static InitialAndMeasureAndObsPopulation empty() {
         return new InitialAndMeasureAndObsPopulation(InitialPopulation.ZERO, MeasurePopulation.ZERO, ObservationPopulation.empty());
@@ -35,27 +35,23 @@ public record InitialAndMeasureAndObsPopulation(InitialPopulation initialPopulat
 
     @Override
     public MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent() {
-        var populations = new LinkedList<MeasureReport.StratifierGroupPopulationComponent>();
-
-        populations.add(initialPopulation.toReportStratifierPopulation());
-        populations.add(measurePopulation.toReportStratifierPopulation());
-        populations.add(observationPopulation.toReportStratifierPopulation());
-
         return new MeasureReport.StratifierGroupComponent()
-                .setPopulation(populations)
+                .setPopulation(
+                        List.of(initialPopulation.toReportStratifierPopulation(),
+                                measurePopulation.toReportStratifierPopulation(),
+                                observationPopulation.toReportStratifierPopulation())
+                )
                 .setMeasureScore(new Quantity(observationPopulation.aggregateMethod().getScore()));
     }
 
     @Override
     public MeasureReport.MeasureReportGroupComponent toReportGroupComponent() {
-        var populations = new LinkedList<MeasureReport.MeasureReportGroupPopulationComponent>();
-
-        populations.add(initialPopulation.toReportGroupPopulation());
-        populations.add(measurePopulation.toReportGroupPopulation());
-        populations.add(observationPopulation.toReportGroupPopulation());
-
         return new MeasureReport.MeasureReportGroupComponent()
-                .setPopulation(populations)
+                .setPopulation(
+                        List.of(initialPopulation.toReportGroupPopulation(),
+                                measurePopulation.toReportGroupPopulation(),
+                                observationPopulation.toReportGroupPopulation())
+                )
                 .setMeasureScore(new Quantity(observationPopulation.aggregateMethod().getScore()));
     }
 }

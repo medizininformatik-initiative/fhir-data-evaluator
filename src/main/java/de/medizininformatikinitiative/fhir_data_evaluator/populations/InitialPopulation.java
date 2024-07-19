@@ -2,7 +2,7 @@ package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
 import org.hl7.fhir.r4.model.MeasureReport;
 
-import java.util.LinkedList;
+import java.util.List;
 
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
 
@@ -11,7 +11,7 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.
  *
  * @param count the number of members in the initial population
  */
-public record InitialPopulation(int count) implements PopulationI<InitialPopulation> {
+public record InitialPopulation(int count) implements Population<InitialPopulation> {
 
     public static final InitialPopulation ZERO = new InitialPopulation(0);
     public static final InitialPopulation ONE = new InitialPopulation(1);
@@ -23,20 +23,12 @@ public record InitialPopulation(int count) implements PopulationI<InitialPopulat
 
     @Override
     public MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent() {
-        var populations = new LinkedList<MeasureReport.StratifierGroupPopulationComponent>();
-
-        populations.add(toReportStratifierPopulation());
-
-        return new MeasureReport.StratifierGroupComponent().setPopulation(populations);
+        return new MeasureReport.StratifierGroupComponent().setPopulation(List.of(toReportStratifierPopulation()));
     }
 
     @Override
     public MeasureReport.MeasureReportGroupComponent toReportGroupComponent() {
-        var populations = new LinkedList<MeasureReport.MeasureReportGroupPopulationComponent>();
-
-        populations.add(toReportGroupPopulation());
-
-        return new MeasureReport.MeasureReportGroupComponent().setPopulation(populations);
+        return new MeasureReport.MeasureReportGroupComponent().setPopulation(List.of(toReportGroupPopulation()));
     }
 
     public MeasureReport.MeasureReportGroupPopulationComponent toReportGroupPopulation() {
