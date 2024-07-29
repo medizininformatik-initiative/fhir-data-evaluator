@@ -61,11 +61,10 @@ class GroupEvaluatorTest {
     static final String OBSERVATION_POPULATION_PATH = "Condition.subject.reference";
     static final String CRITERIA_REFERENCE_VALUE = "measure-population-identifier";
 
-    static FHIRPathEngine pathEngine;
-    static GroupEvaluator groupEvaluator;
-
     @Mock
     DataStore dataStore;
+    FHIRPathEngine pathEngine;
+    GroupEvaluator groupEvaluator;
 
 
     private static Expression expressionOfPath(String expStr) {

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MeasureEvaluatorUnitTest {
 
-    static FHIRPathEngine pathEngine;
+    FHIRPathEngine pathEngine;
 
     @BeforeEach
     void setUp() {
