@@ -32,3 +32,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Validation jar
+validator_cli.jar
