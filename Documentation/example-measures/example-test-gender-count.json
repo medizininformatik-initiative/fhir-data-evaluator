@@ -20,7 +20,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Patient"
+            "expression": "Patient?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient"
           },
           "id": "initial-population-identifier"
         },

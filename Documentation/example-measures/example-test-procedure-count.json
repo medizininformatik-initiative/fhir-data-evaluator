@@ -20,7 +20,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Procedure"
+            "expression": "Procedure?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
           },
           "id": "initial-population-identifier"
         },
