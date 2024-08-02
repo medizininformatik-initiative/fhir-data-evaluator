@@ -1,5 +1,5 @@
 fhir:
-  server: ${FHIR_SERVER:http://localhost:8080/fhir}
+  server: ${FHIR_SERVER:http://localhost:8081/fhir}
   user: ${FHIR_USER:''}
   password: ${FHIR_PASSWORD:''}
   maxConnections: ${FHIR_MAX_CONNECTIONS:4}

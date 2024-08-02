@@ -4,10 +4,7 @@ import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAnd
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.MeasurePopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.ObservationPopulation;
-import org.hl7.fhir.r4.model.Base;
-import org.hl7.fhir.r4.model.ExpressionNode;
-import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.model.StringType;
+import org.hl7.fhir.r4.model.*;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
@@ -74,6 +71,9 @@ public record GroupReduceOpObservation(List<StratifierReduceOp<InitialAndMeasure
         if (found.get(0) instanceof StringType s)
             return Optional.of(s.getValue());
 
+        if(found.get(0) instanceof Identifier s) {
+            return Optional.of(s.getValue());
+        }
         throw new IllegalArgumentException("Measure observation population evaluated into different type than 'String'");
     }
 }

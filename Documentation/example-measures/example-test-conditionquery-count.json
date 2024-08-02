@@ -20,7 +20,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Condition"
           },
           "id": "initial-population-identifier"
         },
@@ -69,7 +69,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+            "expression": "Condition.code.coding"
           },
           "code": {
             "coding": [
