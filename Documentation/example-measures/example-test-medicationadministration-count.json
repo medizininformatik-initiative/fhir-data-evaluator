@@ -20,7 +20,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "MedicationAdministration"
+            "expression": "MedicationAdministration?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration"
           },
           "id": "initial-population-identifier"
         },
