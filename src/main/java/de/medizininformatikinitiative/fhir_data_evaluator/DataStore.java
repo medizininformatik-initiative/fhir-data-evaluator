@@ -19,7 +19,7 @@ public class DataStore {
     private final IParser parser;
     private final int pageCount;
 
-    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}")int pageCount) {
+    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount) {
         this.client = client;
         this.parser = parser;
         this.pageCount = pageCount;
@@ -53,7 +53,7 @@ public class DataStore {
     }
 
     String appendPageCount(String query) {
-        return query + "&_count=" + this.pageCount;
+        return query.contains("?") ? query + "&_count=" + this.pageCount : query + "?_count=" + this.pageCount;
     }
 
 }

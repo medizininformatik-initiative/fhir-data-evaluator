@@ -1,38 +1,48 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * Holds {@link StratifierResult}s of one group.
- * <p>
- * The {@code populationsCount} refers to all resources of the group without any stratification.
- * Each entry in the {@code stratifierResults} list is the result of one Stratifier from the Measure.
+ * Holds {@link Population}s and {@link StratifierResult}s of one group.
+ *
+ * @param populations       the count of all resources of the group without any stratification
+ * @param stratifierResults holds the results of each stratifier
  */
-public record GroupResult(PopulationsCount populationsCount, List<StratifierResult> stratifierResults) {
+public record GroupResult<T extends Population<T>>(T populations, List<StratifierResult<T>> stratifierResults) {
 
-
-    /**
-     * Merges two {@link GroupResult}s of the same group.
-     * <p>
-     * This method is used to make one combined {@link GroupResult} from the {@link GroupResult}s that result from
-     * evaluating each resource individually.
-     */
-    public GroupResult merge(GroupResult other) {
-        return new GroupResult(this.populationsCount.merge(other.populationsCount),
-                mergeResourceResults(this.stratifierResults, other.stratifierResults));
+    public GroupResult {
+        requireNonNull(populations);
+        stratifierResults = List.copyOf(stratifierResults);
     }
 
-    private List<StratifierResult> mergeResourceResults(List<StratifierResult> a, List<StratifierResult> b) {
-        return IntStream.range(0, a.size()).mapToObj(i -> a.get(i).merge(b.get(i))).toList();
+    public static <T extends Population<T>> GroupResult<T> initial(T populations, List<StratifierResult<T>> initialResults) {
+        return new GroupResult<T>(populations, initialResults);
+    }
+
+    public GroupResult<T> applyResource(List<StratifierReduceOp<T>> stratifierOperations, Resource resource, T incrementPopulation) {
+        assert stratifierResults.size() == stratifierOperations.size();
+        var newPopulation = populations.merge(incrementPopulation);
+        return new GroupResult<T>(newPopulation, applyEachStratifier(stratifierOperations, resource, incrementPopulation));
+    }
+
+    /**
+     * This method assumes that the {@code stratifierOperation} at index {@code i} belongs to the {@code stratifierResult}
+     * at index {@code i}.
+     */
+    private List<StratifierResult<T>> applyEachStratifier(List<StratifierReduceOp<T>> stratifierOperations, Resource resource, T incrementPopulation) {
+        return IntStream.range(0, stratifierOperations.size()).mapToObj(i ->
+                stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementPopulation)).toList();
     }
 
     public MeasureReport.MeasureReportGroupComponent toReportGroup() {
-        return new MeasureReport.MeasureReportGroupComponent()
-                .setPopulation(populationsCount.toReportGroupPopulations())
-                .setStratifier(stratifierResults.stream().map(StratifierResult::toReport).toList());
+        return populations.toReportGroupComponent()
+                .setStratifier(stratifierResults.stream().map(StratifierResult::toReportGroupStratifier).toList());
     }
-
 }

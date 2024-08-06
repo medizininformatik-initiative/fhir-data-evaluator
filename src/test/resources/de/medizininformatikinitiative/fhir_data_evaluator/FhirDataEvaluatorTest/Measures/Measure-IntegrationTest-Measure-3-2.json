@@ -1,0 +1,55 @@
+{
+  "resourceType": "Measure",
+  "id": "IntegrationTest-Measure-3-2",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "group": [
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "code": "initial-population",
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Observation"
+          },
+          "id": "initial-population-identifier"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "(Observation.value as Quantity).comparator"
+          },
+          "code": {
+            "coding": [
+              {
+                "code": "value-comparator",
+                "system": "http://fhir-data-evaluator/strat/system"
+              }
+            ]
+          },
+          "id": "strat-1"
+        }
+      ],
+      "id": "group-1"
+    }
+  ],
+  "status": "active",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/IntegrationTest-Measure-3-2",
+  "version": "1.0",
+  "name": "measure-3-2",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "description": "Measure 3-2 for integration test."
+}

@@ -1,0 +1,53 @@
+{
+  "resourceType": "Measure",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExistsMeasure",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "ExistsMeasure",
+  "description": "Exists measure for integration test.",
+  "group": [
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Observation"
+          },
+          "id": "initial-population-identifier"
+        }
+      ],
+      "stratifier": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-value-code-exists"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.status.exists()"
+          },
+          "id": "strat-1"
+        }
+      ]
+    }
+  ]
+}

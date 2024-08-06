@@ -1,0 +1,56 @@
+{
+  "resourceType": "Measure",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "ExampleConditionSnomedAndStatusSeparate",
+  "title": "Example Condition Snomed and Status separate",
+  "description": "Example Measure to count if code in Conditions exists.",
+  "date": "2024-05-10",
+  "group": [
+    {
+      "description": "Simple Stratifier concept",
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
+          },
+          "id": "initial-population-identifier"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.exists()"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-code-exists"
+              }
+            ]
+          },
+          "id": "strat-1"
+        }
+      ]
+    }
+  ]
+}

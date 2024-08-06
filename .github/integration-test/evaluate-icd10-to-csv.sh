@@ -1,14 +1,18 @@
-#!/bin/bash
+#!/bin/bash -e
 
 INPUT_MEASURE=$1
-CSV_OUTPUT_DIR=$2
+BASE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-icd10-test-to-csv-test
+mkdir "$BASE_OUTPUT_DIR"
 
-docker run -v $INPUT_MEASURE:/app/input-measure.json -v $CSV_OUTPUT_DIR:/app/csv-output/ -e CONVERT_TO_CSV=true -e FHIR_SERVER=http://fhir-server:8080/fhir --network integration-test_testing-network fhir-data-evaluator
+docker run -v "$INPUT_MEASURE":/app/measure.json -v "$BASE_OUTPUT_DIR":/app/output/ -e FHIR_SERVER=http://fhir-server:8080/fhir \
+       -e CONVERT_TO_CSV=true -e TZ="$(cat /etc/timezone)" --network integration-test_testing-network fhir-data-evaluator
+
+today=$(date +"%Y-%m-%d")
+OUTPUT_DIR=$(find "$BASE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
 
 #wait for csv file creation
 sleep 1
 
-TODAY=$(date +"%Y-%m-%d")
 EXPECTED_STRATIFIER_COUNT=2
 
 STRATIFIER_COUNT=""
@@ -17,7 +21,7 @@ while IFS=, read -r system code display count; do
         STRATIFIER_COUNT=$count
         break
     fi
-done < $CSV_OUTPUT_DIR$TODAY/group0-icd10-code.csv
+done < "$OUTPUT_DIR"/icd10-code.csv
 
 if [ "$STRATIFIER_COUNT" = "$EXPECTED_STRATIFIER_COUNT" ]; then
   echo "OK 👍: stratifier count ($STRATIFIER_COUNT) equals the expected count"

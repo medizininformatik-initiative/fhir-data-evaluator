@@ -1,8 +1,11 @@
 fhir:
-  server: ${FHIR_SERVER:http://localhost:8082/fhir}
-  user: ''
-  password: ''
-  maxConnections: ${FLARE_FHIR_MAX_CONNECTIONS:4}
-  maxQueueSize: ${FLARE_FHIR_MAX_QUEUE_SIZE:500}
-  pageCount: ${FLARE_FHIR_PAGE_COUNT:1000}
-measureFile: ${MEASURE_FILE:example-measure.json}
+  server: ${FHIR_SERVER:http://localhost:8080/fhir}
+  user: ${FHIR_USER:}
+  password: ${FHIR_PASSWORD:}
+  maxConnections: ${FHIR_MAX_CONNECTIONS:4}
+  maxQueueSize: ${FHIR_MAX_QUEUE_SIZE:500}
+  pageCount: ${FHIR_PAGE_COUNT:1000}
+  bearerToken: ${FHIR_BEARER_TOKEN:}
+maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
+measureFile: ${MEASURE_FILE:/app/measure.json}
+outputDir: ${OUTPUT_DIR:/app/output/}

@@ -1,0 +1,323 @@
+{
+  "resourceType": "Measure",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleCdsCodeStratifier",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "cds-stratifier",
+  "title": "Example Measure to count basic cds code stratifier",
+  "description": "Example Measure to count basic cds code stratifier",
+  "date": "2024-05-10",
+  "group": [
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+          },
+          "id": "initial-population-identifier-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-icd10-code"
+              }
+            ]
+          },
+          "id": "strat-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://snomed.info/sct')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-sct-code"
+              }
+            ]
+          },
+          "id": "strat-2"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/alpha-id')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-alhpaid-code"
+              }
+            ]
+          },
+          "id": "strat-3"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://www.orpha.net')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-orphanet-code"
+              }
+            ]
+          },
+          "id": "strat-4"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://terminology.hl7.org/CodeSystem/icd-o-3')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-icdo3-code"
+              }
+            ]
+          },
+          "id": "strat-5"
+        }
+      ]
+    },
+    {
+
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Observation?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
+          },
+          "id": "initial-population-identifier-2"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.code.coding.where(system='http://loinc.org')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-lab-loinc-code"
+              }
+            ]
+          },
+          "id": "strat-6"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.interpretation.coding.where(system='http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-lab-interpretation"
+              }
+            ]
+          },
+          "id": "strat-7"
+        }
+      ]
+    },
+    {
+
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Procedure?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
+          },
+          "id": "initial-population-identifier-3"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Procedure.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/ops')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "procedure-ops-code"
+              }
+            ]
+          },
+          "id": "strat-8"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Procedure.code.coding.where(system='http://snomed.info/sct')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "procedure-sct-code"
+              }
+            ]
+          },
+          "id": "strat-9"
+        }
+      ]
+    },
+    {
+
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Consent?_profile=http://fhir.de/ConsentManagement/StructureDefinition/Consent"
+          },
+          "id": "initial-population-identifier-4"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.7')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-vearbeiten-speichern"
+              }
+            ]
+          },
+          "id": "strat-10"
+        }
+      ]
+    },
+    {
+
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Specimen?_profile=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
+          },
+          "id": "initial-population-identifier-5"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Specimen.type.coding.where(system='http://snomed.info/sct')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "specimen-type-sct-code"
+              }
+            ]
+          },
+          "id": "strat-11"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Specimen.collection.bodySite.coding.where(system='http://snomed.info/sct')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "specimen-bodysite-sct-code"
+              }
+            ]
+          },
+          "id": "strat-12"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Specimen.collection.bodySite.coding.where(system='http://terminology.hl7.org/CodeSystem/icd-o-3')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "specimen-bodysite-icdo3-code"
+              }
+            ]
+          },
+          "id": "strat-13"
+        }
+      ]
+    }
+  ]
+}

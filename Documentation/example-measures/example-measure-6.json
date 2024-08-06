@@ -1,28 +1,21 @@
 {
   "resourceType": "Measure",
-  "id": "fdpg-plus-fhir-evaluator-example-measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
-  "identifier": [
-    {
-      "system": "https://medizininformatik-initiative.de/fdpg/fhir/Measure",
-      "value": "fhirEvaluator/v1"
-    }
-  ],
   "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "FHIR Evaluator example Measure Input",
-  "title": "FHIR Evaluator example Measure Input",
-  "description": "This measure defines the set of rule by which to extract information from the FHIR server",
-  "date": "2024-02-29",
+  "name": "ExampleConditionSnomedWithStatus",
+  "title": "Example Condition Snomed with Status",
+  "description": "Example Measure to count codings in different FHIR resource types.",
+  "date": "2024-05-10",
   "group": [
     {
-      "basis": "Condition",
       "description": "Simple Stratifier concept",
       "population": [
         {
@@ -30,14 +23,15 @@
             "coding": [
               {
                 "system": "http://terminology.hl7.org/CodeSystem/measure-population",
-                "code": "initital-population"
+                "code": "initial-population"
               }
             ]
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Observation"
-          }
+            "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
@@ -46,14 +40,88 @@
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "condition-code"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding"
+          },
+          "id": "strat-1"
+        }
+      ]
+    },
+    {
+      "description": "Simple Stratifier concept",
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Observation?_versionId=125"
+          },
+          "id": "initial-population-identifier-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-value-code"
               }
             ]
           },
           "criteria": {
             "language": "text/fhirpath",
             "expression": "Observation.value.coding"
-          }
+          },
+          "id": "strat-2"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Procedure?_versionId=125"
+          },
+          "id": "initial-population-identifier-2"
+        }
+      ],
+      "stratifier": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "procedure-code"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Procedure.code.coding"
+          },
+          "id": "strat-3"
         }
       ]
     }

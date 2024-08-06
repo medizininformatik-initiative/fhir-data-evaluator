@@ -1,28 +1,21 @@
 {
   "resourceType": "Measure",
-  "id": "fdpg-plus-fhir-evaluator-example-measure",
   "meta": {
     "profile": [
-      "http://hl7.org/fhir/StructureDefinition/Measure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
     ]
   },
-  "identifier": [
-    {
-      "system": "https://medizininformatik-initiative.de/fdpg/fhir/Measure",
-      "value": "fhirEvaluator/v1"
-    }
-  ],
   "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "FHIR Evaluator example Measure Input",
-  "title": "FHIR Evaluator example Measure Input",
-  "description": "This measure defines the set of rule by which to extract information from the FHIR server",
-  "date": "2024-02-29",
+  "name": "ExampleConditionIcd10",
+  "title": "Example Condition Icd10",
+  "description": "Example Measure to count all ICD-10 codes.",
+  "date": "2024-05-10",
   "group": [
     {
-      "basis": "Condition",
       "description": "Simple Stratifier concept",
       "population": [
         {
@@ -37,7 +30,8 @@
           "criteria": {
             "language": "text/x-fhir-query",
             "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
-          }
+          },
+          "id": "initial-population-identifier"
         }
       ],
       "stratifier": [
@@ -53,7 +47,8 @@
                 "code": "icd10-code"
               }
             ]
-          }
+          },
+          "id": "strat-1"
         }
       ]
     }

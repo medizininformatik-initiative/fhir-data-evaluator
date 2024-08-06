@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - implement-base-functionality
     tags:
       - '*.*.*'
   pull_request:
@@ -14,10 +13,49 @@ on:
       - develop
 
 jobs:
+  fhir-data-evaluator-ig:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21
+
+      - name: Install SUSHI
+        run: npm install -g fsh-sushi
+
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        working-directory: shorthand/FhirDataEvaluatorIG
+        run: make build
+
+      - name: Validate Generated Measures
+        working-directory: shorthand/FhirDataEvaluatorIG
+        run: make validate
+
+      - name: Validate Documentation Measures
+        run: make validate -C shorthand/FhirDataEvaluatorIG RESOURCES_PATH="${GITHUB_WORKSPACE}/Documentation/example-measures/example-measure-*.json"
+
+      - name: Upload Generated Measures for Integration Test
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-resources
+          path: shorthand/FhirDataEvaluatorIG/fsh-generated/resources/Measure-IntegrationTest-Measure-*.json
+
   build:
+    needs: fhir-data-evaluator-ig
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Generated Resources
+        uses: actions/download-artifact@v4
+        with:
+          name: generated-resources
+          path: shorthand/FhirDataEvaluatorIG/fsh-generated/resources
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -72,7 +110,7 @@ jobs:
         run: docker load --input /tmp/fhir-data-evaluator.tar
 
       - name: Run Blaze
-        run: docker-compose -f .github/integration-test/docker-compose.yml up -d
+        run: docker compose -f .github/integration-test/docker-compose.yml up -d
 
       - name: Wait for Blaze
         run: .github/scripts/wait-for-url.sh http://localhost:8082/health
@@ -81,10 +119,19 @@ jobs:
         run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/test-data
 
       - name: Run Integration Test for ICD10
-        run: .github/integration-test/evaluate-icd10.sh /${PWD}/.github/integration-test/icd10-measure.json
+        run: .github/integration-test/evaluate-icd10.sh /${PWD}/.github/integration-test/measures/icd10-measure.json
 
       - name: Run Integration Test for ICD10 to CSV
-        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/.github/integration-test/icd10-measure.json $PWD/.github/integration-test/
+        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/.github/integration-test/measures/icd10-measure.json
+
+      - name: Run Integration Test for ICD10 with Status to CSV
+        run: .github/integration-test/evaluate-icd10WithStatus-to-csv.sh /${PWD}/.github/integration-test/measures/icd10withStatus-measure.json
+
+      - name: Run Integration Test for type code
+        run: .github/integration-test/evaluate-code.sh /${PWD}/.github/integration-test/measures/code-measure.json
+
+      - name: Run Integration Test for type boolean
+        run: .github/integration-test/evaluate-exists.sh /${PWD}/.github/integration-test/measures/exists-measure.json
 
   push-image:
     needs:
@@ -125,10 +172,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare Version Info
-        id: prep
-        run: |
-          echo "mii=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+      - name: Docker meta
+        id: docker-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/medizininformatik-initiative/fhir-data-evaluator
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -137,4 +191,5 @@ jobs:
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ steps.prep.outputs.mii }}/fhir-data-evaluator:latest
+          tags: ${{ steps.docker-meta.outputs.tags }}
+          labels: ${{ steps.docker-meta.outputs.labels }}

@@ -1,60 +1,69 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * Holds found values of one Stratifier.
+ * Holds found values of one stratifier.
  * <p>
- * At the beginning, it will usually hold one set of values found in one resource, with the Initial-Population count set to 1.
- * Then later multiple {@code StratifierResults} of the same Stratifier will be merged to a map that counts each found set of values.
+ * In case the Stratifier does not consist of components but of criteria, a set will hold only one {@link StratumComponent}.
  * <p>
- * In case the Stratifier does not consist of components but of criteria, the set will hold only one {@link ComponentKeyPair}.
- * <p>
- * In the {@code MeasureReport} a {@code StratifierResult} is the equivalent to an element in the {@code stratum} list.
+ * In the {@code MeasureReport} a {@link StratifierResult} is the equivalent to a {@link MeasureReport.MeasureReportGroupStratifierComponent stratifier}.
+ *
+ * @param code        the code of the stratifier if the stratifier consists of criteria and code
+ * @param populations mutable map of the populations of each found set of values
  */
-public record StratifierResult(Map<Set<ComponentKeyPair>, PopulationsCount> counts,
-                               HashableCoding stratifierCode) {
+public record StratifierResult<T extends Population<T>>(Optional<HashableCoding> code,
+                                                        Map<Set<StratumComponent>, T> populations) {
 
-    public static StratifierResult ofSingleKeyPair(ComponentKeyPair key, PopulationsCount populationsCount, HashableCoding stratifierCode) {
-        return new StratifierResult(Map.of(Set.of(key), populationsCount), stratifierCode);
+    public StratifierResult {
+        requireNonNull(code);
+        requireNonNull(populations);
     }
 
-    public static StratifierResult ofSingleSet(Set<ComponentKeyPair> set, PopulationsCount populationsCount, HashableCoding stratifierCode) {
-        return new StratifierResult(Map.of(set, populationsCount), stratifierCode);
+    public static <T extends Population<T>> StratifierResult<T> initial(Measure.MeasureGroupStratifierComponent s, Class<T> type) {
+        var code = s.hasCode() ? HashableCoding.ofFhirCoding(s.getCode().getCodingFirstRep()) : null;
+        return new StratifierResult<T>(Optional.ofNullable(code), new HashMap<>());
     }
 
-    public StratifierResult merge(StratifierResult other) {
-        assert this.stratifierCode.equals(other.stratifierCode);
-        return new StratifierResult(mergeMaps(this.counts, other.counts), this.stratifierCode);
+    /**
+     * Merges {@code components} and the corresponding {@code newPopulations} into the {@code StratifierResult} by
+     * mutating it and then returns itself.
+     *
+     * @param components     the key of the populations to increment
+     * @param newPopulations the populations used to initialize or increment the strata
+     * @return the mutated {@code StratifierResult} itself
+     */
+    public StratifierResult<T> mergeStratumComponents(Set<StratumComponent> components, T newPopulations) {
+        populations.merge(components, newPopulations, T::merge);
+        return this;
     }
 
-    private Map<Set<ComponentKeyPair>, PopulationsCount> mergeMaps(Map<Set<ComponentKeyPair>, PopulationsCount> a, Map<Set<ComponentKeyPair>, PopulationsCount> b) {
-        return Stream.concat(a.entrySet().stream(), b.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, PopulationsCount::merge));
+    public MeasureReport.MeasureReportGroupStratifierComponent toReportGroupStratifier() {
+        var reportStratifier = new MeasureReport.MeasureReportGroupStratifierComponent()
+                .setStratum(this.populations.entrySet().stream().map(StratifierResult::entryToReport).toList());
+
+        code.ifPresent(c -> reportStratifier.setCode(List.of(c.toCodeableConcept())));
+
+        return reportStratifier;
     }
 
-    public MeasureReport.MeasureReportGroupStratifierComponent toReport() {
-        return new MeasureReport.MeasureReportGroupStratifierComponent()
-                .setCode(List.of(new CodeableConcept(this.stratifierCode.toCoding())))
-                .setStratum(this.counts.entrySet().stream().map(this::entryToReport).toList());
-    }
+    private static <T extends Population<T>> MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<StratumComponent>, T> entry) {
 
-    private MeasureReport.StratifierGroupComponent entryToReport(Map.Entry<Set<ComponentKeyPair>, PopulationsCount> entry) {
-        MeasureReport.StratifierGroupComponent stratumElement = new MeasureReport.StratifierGroupComponent()
-                .setPopulation(entry.getValue().toReportStratifierPopulations());
+        MeasureReport.StratifierGroupComponent stratum = entry.getValue().toReportStratifierGroupComponent();
 
         if (entry.getKey().size() == 1) {
-            stratumElement.setValue(new CodeableConcept(entry.getKey().iterator().next().valueCode().toCoding()));
+            stratum.setValue(new CodeableConcept(entry.getKey().iterator().next().value().toCoding()));
         } else {
-            stratumElement.setComponent(entry.getKey().stream().map(ComponentKeyPair::toReport).toList());
+            stratum.setComponent(entry.getKey().stream().map(StratumComponent::toReport).toList());
         }
 
-        return stratumElement;
+        return stratum;
     }
 }

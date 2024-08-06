@@ -1,0 +1,71 @@
+{
+  "resourceType": "Measure",
+  "meta": {
+    "profile": [
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+    ]
+  },
+  "version": "1.0",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionSnomedAndStatus",
+  "status": "active",
+  "experimental": false,
+  "publisher": "FDPG-Plus",
+  "name": "ExampleConditionSnomedAndStatusSeparate",
+  "title": "Example Condition Snomed and Status separate",
+  "description": "Example Measure to separately count all Snomed codes and the combination of Snomed code and clinical status.",
+  "date": "2024-05-10",
+  "group": [
+    {
+      "description": "Simple Stratifier concept",
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile=http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
+          },
+          "id": "initial-population-identifier"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://snomed.info/sct')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "snomed-code"
+              }
+            ]
+          },
+          "id": "strat-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.clinicalStatus.coding"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-clinical-status"
+              }
+            ]
+          },
+          "id": "strat-2"
+        }
+      ]
+    }
+  ]
+}
