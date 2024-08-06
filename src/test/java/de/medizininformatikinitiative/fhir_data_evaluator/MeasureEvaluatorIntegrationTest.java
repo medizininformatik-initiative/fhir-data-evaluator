@@ -23,6 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,9 +38,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @ActiveProfiles("test")
 class MeasureEvaluatorIntegrationTest {
 
-    public static final StratumComponent I60 = new StratumComponent(
+    public static final StratumComponent I60_1 = new StratumComponent(
             new HashableCoding("http://fhir-data-evaluator/strat/system", "icd10-code", "some-display"),
             new HashableCoding("http://fhir.de/CodeSystem/bfarm/icd-10-gm", "I60.1", "some-display"));
+    public static final StratumComponent I60_2 = new StratumComponent(
+            new HashableCoding("http://fhir-data-evaluator/strat/system", "icd10-code", "some-display"),
+            new HashableCoding("http://fhir.de/CodeSystem/bfarm/icd-10-gm", "I60.2", "some-display"));
+    public static final StratumComponent I60_3 = new StratumComponent(
+            new HashableCoding("http://fhir-data-evaluator/strat/system", "icd10-code", "some-display"),
+            new HashableCoding("http://fhir.de/CodeSystem/bfarm/icd-10-gm", "I60.3", "some-display"));
     public static final StratumComponent ACTIVE = new StratumComponent(
             new HashableCoding("http://fhir-data-evaluator/strat/system", "condition-clinical-status", "some-display"),
             new HashableCoding("http://terminology.hl7.org/CodeSystem/condition-clinical", "active", "some-display"));
@@ -65,6 +72,7 @@ class MeasureEvaluatorIntegrationTest {
     static final String measure3_1 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-1.json";
     static final String measure3_2 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-3-2.json";
     static final String measure4 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-4.json";
+    static final String measure5 = "src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures/Measure-IntegrationTest-Measure-5.json";
 
     @TestConfiguration
     static class Config {
@@ -90,7 +98,6 @@ class MeasureEvaluatorIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeasureEvaluatorIntegrationTest.class);
     private static boolean dataImported = false;
-
 
     @SuppressWarnings("resource")
     @Container
@@ -127,7 +134,7 @@ class MeasureEvaluatorIntegrationTest {
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
-        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60))
+        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_1))
                 .getPopulation().get(0).getCount())
                 .isEqualTo(100);
     }
@@ -138,7 +145,7 @@ class MeasureEvaluatorIntegrationTest {
         var measure = parser.parseResource(Measure.class, slurpMeasure(measure2));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
-        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60, ACTIVE))
+        assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_1, ACTIVE))
                 .getPopulation().get(0).getCount())
                 .isEqualTo(100);
     }
@@ -184,6 +191,74 @@ class MeasureEvaluatorIntegrationTest {
                 .isEqualTo(1);
     }
 
+
+    @Test
+    @DisplayName("Test Unique Count")
+    public void test_measure_5() throws IOException {
+        var measure = parser.parseResource(Measure.class, slurpMeasure(measure5));
+
+        var reportResult = measureEvaluator.evaluateMeasure(measure).block();
+
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.INITIAL_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.MEASURE_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.MEASURE_OBSERVATION_CODING).size()).isEqualTo(1);
+
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.INITIAL_POPULATION_CODING).get(0).getCount()).isEqualTo(107);
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.MEASURE_POPULATION_CODING).get(0).getCount()).isEqualTo(107);
+        assertThat(findPopulationsByCode(reportResult.getGroup().get(0), HashableCoding.MEASURE_OBSERVATION_CODING).get(0).getCount()).isEqualTo(6);
+
+        assertThat(reportResult.getGroup().get(0).getMeasureScore().getValue()).isEqualTo(new BigDecimal(4));
+
+        var stratum_I60_1 = getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_1));
+        var stratum_I60_2 = getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_2));
+        var stratum_I60_3 = getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_3));
+
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.INITIAL_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.MEASURE_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.MEASURE_OBSERVATION_CODING).size()).isEqualTo(1);
+
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.INITIAL_POPULATION_CODING).get(0).getCount()).isEqualTo(100);
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.MEASURE_POPULATION_CODING).get(0).getCount()).isEqualTo(100);
+        assertThat(findPopulationsByCode(stratum_I60_1, HashableCoding.MEASURE_OBSERVATION_CODING).get(0).getCount()).isEqualTo(0);
+
+        assertThat(stratum_I60_1.getMeasureScore().getValue()).isEqualTo(new BigDecimal(0));
+
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.INITIAL_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.MEASURE_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.MEASURE_OBSERVATION_CODING).size()).isEqualTo(1);
+
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.INITIAL_POPULATION_CODING).get(0).getCount()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.MEASURE_POPULATION_CODING).get(0).getCount()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_2, HashableCoding.MEASURE_OBSERVATION_CODING).get(0).getCount()).isEqualTo(1);
+
+        assertThat(stratum_I60_2.getMeasureScore().getValue()).isEqualTo(new BigDecimal(1));
+
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.INITIAL_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.MEASURE_POPULATION_CODING).size()).isEqualTo(1);
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.MEASURE_OBSERVATION_CODING).size()).isEqualTo(1);
+
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.INITIAL_POPULATION_CODING).get(0).getCount()).isEqualTo(6);
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.MEASURE_POPULATION_CODING).get(0).getCount()).isEqualTo(6);
+        assertThat(findPopulationsByCode(stratum_I60_3, HashableCoding.MEASURE_OBSERVATION_CODING).get(0).getCount()).isEqualTo(5);
+
+        assertThat(stratum_I60_3.getMeasureScore().getValue()).isEqualTo(new BigDecimal(4));
+    }
+
+    private static List<MeasureReport.MeasureReportGroupPopulationComponent> findPopulationsByCode(MeasureReport.MeasureReportGroupComponent group, HashableCoding code) {
+        return group.getPopulation().stream().filter(population -> {
+            var codings = population.getCode().getCoding();
+
+            return code.equals(HashableCoding.ofFhirCoding(codings.get(0)));
+        }).toList();
+    }
+
+    private static List<MeasureReport.StratifierGroupPopulationComponent> findPopulationsByCode(MeasureReport.StratifierGroupComponent stratum, HashableCoding code) {
+        return stratum.getPopulation().stream().filter(population -> {
+            var codings = population.getCode().getCoding();
+
+            return code.equals(HashableCoding.ofFhirCoding(codings.get(0)));
+        }).toList();
+    }
 
     private static String slurpMeasure(String measurePath) throws IOException {
         return Files.readString(Path.of(measurePath));

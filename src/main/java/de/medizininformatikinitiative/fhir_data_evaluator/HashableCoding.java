@@ -17,6 +17,8 @@ public record HashableCoding(String system, String code, String display) {
     public static final HashableCoding FAIL_INVALID_TYPE = new HashableCoding("http://fhir-evaluator/strat/system", "fail-invalid-type", "Value of FHIR resource was not of type Coding, Code or Boolean");
     public static final HashableCoding FAIL_MISSING_FIELDS = new HashableCoding("http://fhir-evaluator/strat/system", "fail-missing-fields", "Value was missing at least one mandatory field");
     public static final HashableCoding INITIAL_POPULATION_CODING = new HashableCoding("http://terminology.hl7.org/CodeSystem/measure-population", "initial-population", "display");
+    public static final HashableCoding MEASURE_POPULATION_CODING = new HashableCoding("http://terminology.hl7.org/CodeSystem/measure-population", "measure-population", "");
+    public static final HashableCoding MEASURE_OBSERVATION_CODING = new HashableCoding("http://terminology.hl7.org/CodeSystem/measure-population", "measure-observation", "");
 
     public HashableCoding {
         requireNonNull(system);

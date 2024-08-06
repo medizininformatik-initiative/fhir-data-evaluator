@@ -1,11 +1,11 @@
 fhir:
   server: ${FHIR_SERVER:http://localhost:8080/fhir}
-  user: ${FHIR_USER:''}
-  password: ${FHIR_PASSWORD:''}
+  user: ${FHIR_USER:}
+  password: ${FHIR_PASSWORD:}
   maxConnections: ${FHIR_MAX_CONNECTIONS:4}
   maxQueueSize: ${FHIR_MAX_QUEUE_SIZE:500}
   pageCount: ${FHIR_PAGE_COUNT:1000}
-  bearerToken: ${FHIR_BEARER_TOKEN:''}
+  bearerToken: ${FHIR_BEARER_TOKEN:}
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}
