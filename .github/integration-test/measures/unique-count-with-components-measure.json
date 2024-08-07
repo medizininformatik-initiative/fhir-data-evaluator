@@ -2,21 +2,18 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorContinuousVariableMeasure"
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ConditionIcd10AndStatus",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/UniqueCountWithComponents",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "ConditionIcd10WithStatus",
-  "title": "Condition Icd10 with Status",
-  "description": "Measure to count all ICD-10 codes with clinical status.",
-  "date": "2024-05-10",
+  "name": "UniqueCountWithComponentsMeasure",
+  "description": "Unique count measure with components for integration test.",
   "group": [
     {
-      "description": "Simple Stratifier concept",
       "population": [
         {
           "code": {
@@ -32,6 +29,46 @@
             "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
           },
           "id": "initial-population-identifier"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition"
+          },
+          "id": "measure-population-identifier"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier"
+            }
+          ],
+          "id": "measure-observation-identifier"
         }
       ],
       "stratifier": [
