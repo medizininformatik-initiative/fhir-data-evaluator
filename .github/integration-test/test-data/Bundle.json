@@ -27,6 +27,9 @@
               "display": "some display"
             }
           ]
+        },
+        "subject": {
+          "reference": "Patient/pat-1"
         }
       },
       "request": {
@@ -59,6 +62,9 @@
               "display": "some display"
             }
           ]
+        },
+        "subject": {
+          "reference": "Patient/pat-1"
         }
       },
       "request": {

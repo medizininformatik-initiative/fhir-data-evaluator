@@ -6,13 +6,13 @@
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleConditionIcd10",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ConditionIcd10",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "ExampleConditionIcd10",
-  "title": "Example Condition Icd10",
-  "description": "Example Measure to extract all ICD-10 code counts.",
+  "name": "ConditionIcd10",
+  "title": "Condition Icd10",
+  "description": "Measure to extract all ICD-10 code counts.",
   "date": "2024-05-10",
   "group": [
     {
