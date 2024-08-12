@@ -14,7 +14,6 @@
   "title": "Example Measure To Count CDS Criteria",
   "description": "Example measure to count CDS criteria",
   "group": [
-
     {
       "population": [
         {
@@ -148,25 +147,9 @@
             ]
           },
           "id": "strat-5"
-        },
-        {
-          "criteria": {
-            "language": "text/fhirpath",
-            "expression": "Condition.code.coding"
-          },
-          "code": {
-            "coding": [
-              {
-                "system": "http://fhir-data-evaluator/strat/system",
-                "code": "icd10-code"
-              }
-            ]
-          },
-          "id": "strat-6"
         }
       ]
     },
-
     {
       "population": [
         {
@@ -320,13 +303,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Patient.birthDate"
+            "expression": "Patient.birthDate.exists()"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-data-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "patient-birthdate-exists"
               }
             ]
           },
@@ -341,7 +324,7 @@
             "coding": [
               {
                 "system": "http://fhir-data-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "patient-gender"
               }
             ]
           },
@@ -411,13 +394,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "(MedicationAdministration.medication).code.coding"
+            "expression": "MedicationAdministration.medicationCodeableConcept.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn' or system='http://fhir.de/CodeSystem/bfarm/atc').code"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-data-evaluator/strat/system",
-                "code": "icd10-code"
+                "code": "medicationadministration-medication-code"
               }
             ]
           },
@@ -529,7 +512,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Consent?_profile=http://fhir.de/ConsentManagement/StructureDefinition/Consent"
+            "expression": "Consent?_profile=https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
           },
           "id": "initial-population-identifier-6"
         },
@@ -559,7 +542,7 @@
           },
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Consent.subject.reference"
+            "expression": "Consent.patient.reference"
           },
           "extension": [
             {
