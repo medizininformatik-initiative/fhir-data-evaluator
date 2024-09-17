@@ -1,0 +1,21 @@
+services:
+  fhir-data-evaluator:
+    image: ghcr.io/medizininformatik-initiative/fhir-data-evaluator:develop
+    environment:
+      CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
+      FHIR_SERVER: ${FDE_FHIR_SERVER:-http://fhir-server:8080/fhir}
+      FHIR_USER: ${FDE_FHIR_USER:-}
+      FHIR_PASSWORD: ${FDE_FHIR_PASSWORD:-}
+      FHIR_MAX_CONNECTIONS: ${FDE_FHIR_MAX_CONNECTIONS:-4}
+      FHIR_MAX_QUEUE_SIZE: ${FDE_FHIR_MAX_QUEUE_SIZE:-500}
+      FHIR_PAGE_COUNT: ${FDE_FHIR_PAGE_COUNT:-1000}
+      FHIR_BEARER_TOKEN: ${FDE_FHIR_BEARER_TOKEN:-}
+      MAX_IN_MEMORY_SIZE_MIB: ${FDE_MAX_IN_MEMORY_SIZE_MIB:-10}
+    volumes:
+    - "${FDE_INPUT_MEASURE:-../your/measurefile.json}:/app/measure.json"
+    - "${FDE_OUTPUT_DIR:-../output}:/app/output"
+
+
+
+
+

@@ -87,7 +87,7 @@ docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/ap
 | FHIR_PAGE_COUNT        | 1000                       | The number of resources per page to request from the FHIR server.                      |
 | FHIR_BEARER_TOKEN      |                            | Bearer token for authentication.                                                       |
 | MAX_IN_MEMORY_SIZE_MIB | 10                         | The maximum in-memory buffer size for the webclient in MiB.                            |
-| GENERATE_CSV           | false                      | Whether for the MeasureReport should be generated CSV files.                           |
+| CONVERT_TO_CSV         | false                      | Whether for the MeasureReport should be generated CSV files.                           |
 
 
 ## Documentation
