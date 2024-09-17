@@ -38,7 +38,7 @@ public record GroupResult<T extends Population<T>>(T populations, List<Stratifie
      */
     private List<StratifierResult<T>> applyEachStratifier(List<StratifierReduceOp<T>> stratifierOperations, Resource resource, T incrementPopulation) {
         return IntStream.range(0, stratifierOperations.size()).mapToObj(i ->
-                stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementPopulation)).toList();
+                stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementPopulation.deepCopy())).toList();
     }
 
     public MeasureReport.MeasureReportGroupComponent toReportGroup() {

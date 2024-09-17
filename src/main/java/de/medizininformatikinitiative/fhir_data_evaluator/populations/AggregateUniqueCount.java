@@ -24,6 +24,10 @@ public record AggregateUniqueCount(HashSet<String> aggregatedValues) {
         return new AggregateUniqueCount(new HashSet<>(Set.of(value)));
     }
 
+    public AggregateUniqueCount deepCopy() {
+        return new AggregateUniqueCount(new HashSet<>(aggregatedValues));
+    }
+
     /**
      * Mutates {@code aggregatedValues} to merge the {@code aggregatedValues} of another {@link AggregateUniqueCount}
      * into itself.

@@ -22,6 +22,8 @@ public interface Population<T extends Population<T>> {
      */
     T merge(T population);
 
+    T deepCopy();
+
     MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent();
 
     MeasureReport.MeasureReportGroupComponent toReportGroupComponent();

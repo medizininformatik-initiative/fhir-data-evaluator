@@ -22,6 +22,11 @@ public record InitialPopulation(int count) implements Population<InitialPopulati
     }
 
     @Override
+    public InitialPopulation deepCopy() {
+        return new InitialPopulation(count);
+    }
+
+    @Override
     public MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent() {
         return new MeasureReport.StratifierGroupComponent().setPopulation(List.of(toReportStratifierPopulation()));
     }

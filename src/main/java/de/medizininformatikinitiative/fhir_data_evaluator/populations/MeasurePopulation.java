@@ -25,6 +25,10 @@ public record MeasurePopulation(int count) {
         return new MeasurePopulation(count + other.count);
     }
 
+    public MeasurePopulation deepCopy() {
+        return new MeasurePopulation(count);
+    }
+
     public static Optional<Resource> evaluateMeasurePopResource(Resource resource, ExpressionNode expression, FHIRPathEngine fhirPathEngine) {
         List<Base> found = fhirPathEngine.evaluate(resource, expression);
 
