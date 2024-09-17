@@ -12,7 +12,7 @@ services:
       FHIR_BEARER_TOKEN: ${FDE_FHIR_BEARER_TOKEN:-}
       MAX_IN_MEMORY_SIZE_MIB: ${FDE_MAX_IN_MEMORY_SIZE_MIB:-10}
     volumes:
-    - "${FDE_INPUT_MEASURE:-../your/measurefile.json}:/app/measure.json"
+    - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
     - "${FDE_OUTPUT_DIR:-../output}:/app/output"
 
 
