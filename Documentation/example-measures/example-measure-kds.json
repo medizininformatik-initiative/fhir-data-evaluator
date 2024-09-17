@@ -27,7 +27,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Condition?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
           },
           "id": "initial-population-identifier-1"
         },
@@ -163,7 +163,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Observation?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
+            "expression": "Observation?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
           },
           "id": "initial-population-identifier-2"
         },
@@ -254,7 +254,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Patient?_profile= https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient"
+            "expression": "Patient?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient"
           },
           "id": "initial-population-identifier-3"
         },
@@ -345,7 +345,98 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "MedicationAdministration?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration"
+            "expression": "Patient?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/PatientPseudonymisiert"
+          },
+          "id": "initial-population-identifier-3-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient"
+          },
+          "id": "measure-population-identifier-3-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.id.value"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-3-1"
+            }
+          ],
+          "id": "measure-observation-identifier-3-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.birthDate.exists()"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-pseudonymised-birthdate-exists"
+              }
+            ]
+          },
+          "id": "strat-9-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.gender"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-pseudonymised-gender"
+              }
+            ]
+          },
+          "id": "strat-10-1"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "MedicationAdministration?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration"
           },
           "id": "initial-population-identifier-4"
         },
@@ -436,7 +527,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Procedure?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
+            "expression": "Procedure?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
           },
           "id": "initial-population-identifier-5"
         },
@@ -527,7 +618,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Consent?_profile=https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
+            "expression": "Consent?_profile:below=https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
           },
           "id": "initial-population-identifier-6"
         },
@@ -1428,7 +1519,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Specimen?_profile=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
+            "expression": "Specimen?_profile:below=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
           },
           "id": "initial-population-identifier-7"
         },
