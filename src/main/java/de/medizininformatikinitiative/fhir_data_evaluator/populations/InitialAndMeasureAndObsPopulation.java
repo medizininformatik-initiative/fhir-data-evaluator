@@ -34,6 +34,11 @@ public record InitialAndMeasureAndObsPopulation(InitialPopulation initialPopulat
     }
 
     @Override
+    public InitialAndMeasureAndObsPopulation deepCopy() {
+        return new InitialAndMeasureAndObsPopulation(initialPopulation.deepCopy(), measurePopulation.deepCopy(), observationPopulation.deepCopy());
+    }
+
+    @Override
     public MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent() {
         return new MeasureReport.StratifierGroupComponent()
                 .setPopulation(

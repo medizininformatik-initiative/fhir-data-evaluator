@@ -25,6 +25,10 @@ public record ObservationPopulation(int count, AggregateUniqueCount aggregateMet
         return new ObservationPopulation(1, AggregateUniqueCount.withValue(value));
     }
 
+    public ObservationPopulation deepCopy() {
+        return new ObservationPopulation(count, aggregateMethod.deepCopy());
+    }
+
     public ObservationPopulation merge(ObservationPopulation other) {
         return new ObservationPopulation(count + other.count, aggregateMethod.merge(other.aggregateMethod));
     }
