@@ -14,7 +14,26 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.*;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.CONDITION_QUERY;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_CODE_PATH;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_DEF_CODE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_DEF_CODING;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_DEF_SYSTEM;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_STATUS_PATH;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_VALUE_CODE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.COND_VALUE_SYSTEM;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.INITIAL_POPULATION_CODE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.POPULATION_SYSTEM;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.SOME_DISPLAY;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.STATUS_DEF_CODE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.STATUS_DEF_CODING;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.STATUS_DEF_SYSTEM;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.STATUS_VALUE_CODE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.STATUS_VALUE_SYSTEM;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.createPathEngine;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getCondition;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getInitialPopulation;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getMeasureGroup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 

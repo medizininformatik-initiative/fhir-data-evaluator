@@ -1,5 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
 import org.hl7.fhir.r4.model.MeasureReport;
 
 /**
@@ -11,18 +12,17 @@ import org.hl7.fhir.r4.model.MeasureReport;
  * there is a different implementation of this interface.
  *
  * @param <T> the type of the population
+ * @param <I> the corresponding individual of the population type, which is used to increment the population
  */
-public interface Population<T extends Population<T>> {
+public interface Population<T extends Population<T, I>, I extends Individual<T>> {
 
     /**
-     * Merges all populations of two populations.
+     * Adds the values of the {@link Individual} to this population.
      *
-     * @param population the population to merge into the current population
-     * @return the new population containing the merged populations
+     * @param individual the {@link Individual} used to increment the current population
+     * @return the new population containing the data of both the old population and the individual
      */
-    T merge(T population);
-
-    T deepCopy();
+    T increment(I individual);
 
     MeasureReport.StratifierGroupComponent toReportStratifierGroupComponent();
 

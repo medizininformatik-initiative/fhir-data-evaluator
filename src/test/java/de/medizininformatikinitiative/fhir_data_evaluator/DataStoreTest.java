@@ -13,11 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.io.IOException;
-
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.test.StepVerifier;
+
+import java.io.IOException;
 
 class DataStoreTest {
     private static MockWebServer mockStore;
