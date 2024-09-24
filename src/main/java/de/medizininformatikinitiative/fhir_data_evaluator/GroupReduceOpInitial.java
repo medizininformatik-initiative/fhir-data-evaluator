@@ -1,6 +1,7 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialIndividual;
 import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
@@ -19,15 +20,17 @@ import static java.util.Objects.requireNonNull;
  *
  * @param stratifierReduceOps holds one {@link StratifierReduceOp} for each stratifier in a group
  */
-public record GroupReduceOpInitial(List<StratifierReduceOp<InitialPopulation>> stratifierReduceOps)
-        implements BiFunction<GroupResult<InitialPopulation>, Resource, GroupResult<InitialPopulation>> {
+public record GroupReduceOpInitial(List<StratifierReduceOp<InitialPopulation, InitialIndividual>> stratifierReduceOps)
+        implements BiFunction<GroupResult<InitialPopulation, InitialIndividual>, Resource,
+        GroupResult<InitialPopulation, InitialIndividual>> {
 
     public GroupReduceOpInitial {
         requireNonNull(stratifierReduceOps);
     }
 
     @Override
-    public GroupResult<InitialPopulation> apply(GroupResult<InitialPopulation> groupResult, Resource resource) {
-        return groupResult.applyResource(stratifierReduceOps, resource, InitialPopulation.ONE);
+    public GroupResult<InitialPopulation, InitialIndividual> apply(GroupResult<InitialPopulation, InitialIndividual> groupResult,
+                                                                   Resource resource) {
+        return groupResult.applyResource(stratifierReduceOps, resource, InitialIndividual.INSTANCE);
     }
 }

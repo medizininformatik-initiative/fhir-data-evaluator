@@ -1,6 +1,7 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Resource;
 
@@ -15,30 +16,35 @@ import static java.util.Objects.requireNonNull;
  * @param populations       the count of all resources of the group without any stratification
  * @param stratifierResults holds the results of each stratifier
  */
-public record GroupResult<T extends Population<T>>(T populations, List<StratifierResult<T>> stratifierResults) {
+public record GroupResult<T extends Population<T, I>, I extends Individual<T>>(T populations,
+                                                                               List<StratifierResult<T, I>> stratifierResults) {
 
     public GroupResult {
         requireNonNull(populations);
         stratifierResults = List.copyOf(stratifierResults);
     }
 
-    public static <T extends Population<T>> GroupResult<T> initial(T populations, List<StratifierResult<T>> initialResults) {
-        return new GroupResult<T>(populations, initialResults);
+    public static <T extends Population<T, I>, I extends Individual<T>> GroupResult<T, I> initial(T populations,
+                                                                                                  List<StratifierResult<T, I>> initialResults) {
+        return new GroupResult<T, I>(populations, initialResults);
     }
 
-    public GroupResult<T> applyResource(List<StratifierReduceOp<T>> stratifierOperations, Resource resource, T incrementPopulation) {
+    public GroupResult<T, I> applyResource(List<StratifierReduceOp<T, I>> stratifierOperations, Resource resource, I incrementIndividual) {
         assert stratifierResults.size() == stratifierOperations.size();
-        var newPopulation = populations.merge(incrementPopulation);
-        return new GroupResult<T>(newPopulation, applyEachStratifier(stratifierOperations, resource, incrementPopulation));
+        var newPopulation = populations.increment(incrementIndividual);
+
+        return new GroupResult<T, I>(newPopulation, applyEachStratifier(stratifierOperations, resource, incrementIndividual));
     }
 
     /**
      * This method assumes that the {@code stratifierOperation} at index {@code i} belongs to the {@code stratifierResult}
      * at index {@code i}.
      */
-    private List<StratifierResult<T>> applyEachStratifier(List<StratifierReduceOp<T>> stratifierOperations, Resource resource, T incrementPopulation) {
+    private List<StratifierResult<T, I>> applyEachStratifier(List<StratifierReduceOp<T, I>> stratifierOperations,
+                                                             Resource resource,
+                                                             I incrementIndividual) {
         return IntStream.range(0, stratifierOperations.size()).mapToObj(i ->
-                stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementPopulation.deepCopy())).toList();
+                stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementIndividual)).toList();
     }
 
     public MeasureReport.MeasureReportGroupComponent toReportGroup() {

@@ -21,12 +21,11 @@ public record MeasurePopulation(int count) {
     public static MeasurePopulation ZERO = new MeasurePopulation(0);
     public static MeasurePopulation ONE = new MeasurePopulation(1);
 
-    public MeasurePopulation merge(MeasurePopulation other) {
-        return new MeasurePopulation(count + other.count);
-    }
-
-    public MeasurePopulation deepCopy() {
-        return new MeasurePopulation(count);
+    /**
+     * Increments the count of the measure population.
+     */
+    public MeasurePopulation increment() {
+        return new MeasurePopulation(count + 1);
     }
 
     public static Optional<Resource> evaluateMeasurePopResource(Resource resource, ExpressionNode expression, FHIRPathEngine fhirPathEngine) {

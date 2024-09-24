@@ -145,6 +145,24 @@ jobs:
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 
+      - name: Remove Blaze volumes
+        run: docker compose -f .github/integration-test/docker-compose.yml down -v
+
+      - name: Run Blaze with fresh volumes
+        run: docker compose -f .github/integration-test/docker-compose.yml up -d
+
+      - name: Wait for Blaze
+        run: .github/scripts/wait-for-url.sh http://localhost:8082/health
+
+      - name: Download New Data
+        run: .github/integration-test/test-data/get-mii-testdata.sh
+
+      - name: Upload New Data
+        run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/Vorhofflimmern
+
+      - name: Run Integration Test multiple stratifiers
+        run: .github/integration-test/evaluate-multiple-stratifiers.sh /${PWD}/.github/integration-test/measures/multiple-stratifiers.json
+
 
   push-image:
     needs:

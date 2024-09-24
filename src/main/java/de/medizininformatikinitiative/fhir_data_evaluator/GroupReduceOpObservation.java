@@ -1,9 +1,8 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasureAndObsPopulation;
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.MeasurePopulation;
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.ObservationPopulation;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialAndMeasureAndObsIndividual;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable.InitialAndMeasureAndObsPopulation;
 import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Resource;
@@ -29,10 +28,14 @@ import static java.util.Objects.requireNonNull;
  * @param measurePopulationExpression     the expression to evaluate the measure population
  * @param observationPopulationExpression the expression to evaluate the observation population
  */
-public record GroupReduceOpObservation(List<StratifierReduceOp<InitialAndMeasureAndObsPopulation>> stratifierReduceOps,
-                                       ExpressionNode measurePopulationExpression,
-                                       ExpressionNode observationPopulationExpression, FHIRPathEngine fhirPathEngine)
-        implements BiFunction<GroupResult<InitialAndMeasureAndObsPopulation>, Resource, GroupResult<InitialAndMeasureAndObsPopulation>> {
+public record GroupReduceOpObservation(
+        List<StratifierReduceOp<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual>> stratifierReduceOps,
+        ExpressionNode measurePopulationExpression,
+        ExpressionNode observationPopulationExpression,
+        FHIRPathEngine fhirPathEngine)
+        implements BiFunction<GroupResult<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual>,
+        Resource,
+        GroupResult<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual>> {
 
     public GroupReduceOpObservation {
         requireNonNull(stratifierReduceOps);
@@ -42,28 +45,21 @@ public record GroupReduceOpObservation(List<StratifierReduceOp<InitialAndMeasure
     }
 
     @Override
-    public GroupResult<InitialAndMeasureAndObsPopulation> apply(GroupResult<InitialAndMeasureAndObsPopulation> groupResult, Resource resource) {
-        return groupResult.applyResource(stratifierReduceOps, resource, calcIncrementPopulation(resource));
+    public GroupResult<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual> apply(
+            GroupResult<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual> groupResult,
+            Resource resource) {
+        return groupResult.applyResource(stratifierReduceOps, resource, calcIncrementIndividual(resource));
     }
 
-    private InitialAndMeasureAndObsPopulation calcIncrementPopulation(Resource resource) {
+    private InitialAndMeasureAndObsIndividual calcIncrementIndividual(Resource resource) {
+        Optional<Resource> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression,
+                fhirPathEngine);
+        var obsVal = measurePopResource.flatMap(r -> evaluateObservationPop(r, observationPopulationExpression));
 
-        Optional<Resource> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression, fhirPathEngine);
-        var evaluatedMeasurePop = measurePopResource.isPresent() ? MeasurePopulation.ONE : MeasurePopulation.ZERO;
-        var evaluatedObsPop = measurePopResource
-                .map(r -> evaluateObservationPop(r, observationPopulationExpression))
-                .orElse(ObservationPopulation.empty());
-
-        return new InitialAndMeasureAndObsPopulation(InitialPopulation.ONE, evaluatedMeasurePop, evaluatedObsPop);
+        return new InitialAndMeasureAndObsIndividual(measurePopResource.isPresent(), obsVal);
     }
 
-    public ObservationPopulation evaluateObservationPop(Resource resource, ExpressionNode expression) {
-        Optional<String> value = evaluateObservationPopResource(resource, expression);
-
-        return value.map(ObservationPopulation::initialWithValue).orElse(ObservationPopulation.empty());
-    }
-
-    private Optional<String> evaluateObservationPopResource(Resource resource, ExpressionNode expression) {
+    private Optional<String> evaluateObservationPop(Resource resource, ExpressionNode expression) {
         List<Base> found = fhirPathEngine.evaluate(resource, expression);
 
         if (found.isEmpty())

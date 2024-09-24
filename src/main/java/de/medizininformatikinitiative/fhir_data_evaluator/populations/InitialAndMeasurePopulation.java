@@ -1,5 +1,8 @@
 package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialAndMeasureIndividual;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialIndividual;
 import org.hl7.fhir.r4.model.MeasureReport;
 
 import java.util.List;
@@ -14,20 +17,20 @@ import java.util.List;
  * @param measurePopulation the measure population
  */
 public record InitialAndMeasurePopulation(InitialPopulation initialPopulation, MeasurePopulation measurePopulation)
-        implements Population<InitialAndMeasurePopulation> {
+        implements Population<InitialAndMeasurePopulation, InitialAndMeasureIndividual> {
     public static InitialAndMeasurePopulation ZERO = new InitialAndMeasurePopulation(InitialPopulation.ZERO,
             MeasurePopulation.ZERO);
 
+    /**
+     * Increments the count of the initial population and the measure population.
+     *
+     * @param individual the {@link Individual} used to increment the initial population and the measure population
+     */
     @Override
-    public InitialAndMeasurePopulation merge(InitialAndMeasurePopulation other) {
+    public InitialAndMeasurePopulation increment(InitialAndMeasureIndividual individual) {
         return new InitialAndMeasurePopulation(
-                initialPopulation.merge(other.initialPopulation),
-                measurePopulation.merge(other.measurePopulation));
-    }
-
-    @Override
-    public InitialAndMeasurePopulation deepCopy() {
-        return new InitialAndMeasurePopulation(initialPopulation.deepCopy(), measurePopulation.deepCopy());
+                initialPopulation.increment(InitialIndividual.INSTANCE),
+                individual.containsMeasurePop() ? measurePopulation.increment() : measurePopulation);
     }
 
     @Override
