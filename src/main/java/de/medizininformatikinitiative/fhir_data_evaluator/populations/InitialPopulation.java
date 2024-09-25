@@ -1,5 +1,7 @@
 package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialIndividual;
 import org.hl7.fhir.r4.model.MeasureReport;
 
 import java.util.List;
@@ -11,14 +13,19 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.
  *
  * @param count the number of members in the initial population
  */
-public record InitialPopulation(int count) implements Population<InitialPopulation> {
+public record InitialPopulation(int count) implements Population<InitialPopulation, InitialIndividual> {
 
     public static final InitialPopulation ZERO = new InitialPopulation(0);
     public static final InitialPopulation ONE = new InitialPopulation(1);
 
-
-    public InitialPopulation merge(InitialPopulation other) {
-        return new InitialPopulation(count + other.count);
+    /**
+     * Increments the count of the initial population.
+     *
+     * @param individual the {@link Individual} used to increment the initial population
+     */
+    @Override
+    public InitialPopulation increment(InitialIndividual individual) {
+        return new InitialPopulation(count + individual.count());
     }
 
     @Override

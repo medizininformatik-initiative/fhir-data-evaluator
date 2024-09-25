@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>de.medizininformatikinitiative</groupId>
 	<artifactId>fhir_data_evaluator</artifactId>
-	<version>0.1.0</version>
+	<version>1.0.0</version>
 	<name>Fhir Data Evaluator</name>
 	<description>Fhir Data Evaluator</description>
 	<properties>
@@ -78,6 +78,16 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<version>1.19.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>mockwebserver</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

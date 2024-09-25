@@ -2,18 +2,17 @@
   "resourceType": "Measure",
   "meta": {
     "profile": [
-      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorBasicMeasure"
+      "http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorContinuousVariableMeasure"
     ]
   },
   "version": "1.0",
-  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleCdsCodeStratifier",
+  "url": "https://medizininformatik-initiative.de/fhir/fdpg/Measure/ExampleCdsCriteria",
   "status": "active",
   "experimental": false,
   "publisher": "FDPG-Plus",
-  "name": "cds-stratifier",
-  "title": "Example Measure to count basic cds code stratifier",
-  "description": "Example Measure to count basic cds code stratifier",
-  "date": "2024-05-10",
+  "name": "ExampleCdsCriteria",
+  "title": "Example Measure To Count CDS Criteria",
+  "description": "Example measure to count CDS criteria",
   "group": [
     {
       "population": [
@@ -28,9 +27,49 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Condition?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
           },
           "id": "initial-population-identifier-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition"
+          },
+          "id": "measure-population-identifier-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-1"
+            }
+          ],
+          "id": "measure-observation-identifier-1"
         }
       ],
       "stratifier": [
@@ -112,7 +151,6 @@
       ]
     },
     {
-
       "population": [
         {
           "code": {
@@ -125,9 +163,49 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Observation?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
+            "expression": "Observation?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
           },
           "id": "initial-population-identifier-2"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation"
+          },
+          "id": "measure-population-identifier-2"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-2"
+            }
+          ],
+          "id": "measure-observation-identifier-2"
         }
       ],
       "stratifier": [
@@ -144,7 +222,7 @@
               }
             ]
           },
-          "id": "strat-6"
+          "id": "strat-7"
         },
         {
           "criteria": {
@@ -159,12 +237,11 @@
               }
             ]
           },
-          "id": "strat-7"
+          "id": "strat-8"
         }
       ]
     },
     {
-
       "population": [
         {
           "code": {
@@ -177,9 +254,322 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Procedure?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
+            "expression": "Patient?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient"
           },
           "id": "initial-population-identifier-3"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient"
+          },
+          "id": "measure-population-identifier-3"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.id.value"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-3"
+            }
+          ],
+          "id": "measure-observation-identifier-3"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.birthDate.exists()"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-birthdate-exists"
+              }
+            ]
+          },
+          "id": "strat-9"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.gender"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-gender"
+              }
+            ]
+          },
+          "id": "strat-10"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Patient?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/PatientPseudonymisiert"
+          },
+          "id": "initial-population-identifier-3-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient"
+          },
+          "id": "measure-population-identifier-3-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.id.value"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-3-1"
+            }
+          ],
+          "id": "measure-observation-identifier-3-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.birthDate.exists()"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-pseudonymised-birthdate-exists"
+              }
+            ]
+          },
+          "id": "strat-9-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Patient.gender"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "patient-pseudonymised-gender"
+              }
+            ]
+          },
+          "id": "strat-10-1"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "MedicationAdministration?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration"
+          },
+          "id": "initial-population-identifier-4"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationAdministration"
+          },
+          "id": "measure-population-identifier-4"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationAdministration.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-4"
+            }
+          ],
+          "id": "measure-observation-identifier-4"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationAdministration.medicationCodeableConcept.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn').code"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medicationadministration-medication-code-pzn"
+              }
+            ]
+          },
+          "id": "strat-11"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationAdministration.medicationCodeableConcept.coding.where(system='http://fhir.de/CodeSystem/bfarm/atc').code"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medicationadministration-medication-code-atc"
+              }
+            ]
+          },
+          "id": "strat-12"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Procedure?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure"
+          },
+          "id": "initial-population-identifier-5"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Procedure"
+          },
+          "id": "measure-population-identifier-5"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Procedure.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-5"
+            }
+          ],
+          "id": "measure-observation-identifier-5"
         }
       ],
       "stratifier": [
@@ -196,7 +586,7 @@
               }
             ]
           },
-          "id": "strat-8"
+          "id": "strat-13"
         },
         {
           "criteria": {
@@ -211,12 +601,11 @@
               }
             ]
           },
-          "id": "strat-9"
+          "id": "strat-14"
         }
       ]
     },
     {
-
       "population": [
         {
           "code": {
@@ -229,12 +618,142 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Consent?_profile=http://fhir.de/ConsentManagement/StructureDefinition/Consent"
+            "expression": "Consent?_profile:below=https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
           },
-          "id": "initial-population-identifier-4"
+          "id": "initial-population-identifier-6"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent"
+          },
+          "id": "measure-population-identifier-6"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.patient.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-6"
+            }
+          ],
+          "id": "measure-observation-identifier-6"
         }
       ],
       "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.1')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-patientendaten-erheben,-speichern,-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-0"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.2')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-idat-erheben"
+              }
+            ]
+          },
+          "id": "consent-strat-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.3')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-idat-speichern,-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-2"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.4')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-idat-zusammenfuehren-dritte"
+              }
+            ]
+          },
+          "id": "consent-strat-3"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.5')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-idat-bereitstellen-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-4"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.6')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-erheben"
+              }
+            ]
+          },
+          "id": "consent-strat-5"
+        },
         {
           "criteria": {
             "language": "text/fhirpath",
@@ -244,16 +763,750 @@
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "consent-mdat-vearbeiten-speichern"
+                "code": "consent-mdat-speichern,-verarbeiten"
               }
             ]
           },
-          "id": "strat-10"
+          "id": "consent-strat-6"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.8')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-wissenschaftlich-nutzen-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-7"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.9')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-zusammenfuehren-dritte"
+              }
+            ]
+          },
+          "id": "consent-strat-8"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.37')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-ergebnisse-erheblicher-bedeutung"
+              }
+            ]
+          },
+          "id": "consent-strat-9"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.44')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-patientendaten-retrospektiv-verarbeiten,-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-10"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.45')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-retrospektiv-speichern-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-11"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.46')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-retrospektiv-wissenschaftlich-nutzen-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-12"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.47')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-retrospektiv-zusammenfuehren-dritte"
+              }
+            ]
+          },
+          "id": "consent-strat-13"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.48')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-patientendaten-weitergabe-non-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-14"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.49')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-bereitstellen-non-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-15"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.10')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-krankenkassendaten-retrospektiv-uebertragen,-speichern,-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-16"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.11')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-retrospektiv-uebertragen"
+              }
+            ]
+          },
+          "id": "consent-strat-17"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.12')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-retrospektiv-speichern-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-18"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.13')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-retrospektiv-wissenschaftlich-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-19"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.38')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-retrospektiv-uebertragen-kvnr"
+              }
+            ]
+          },
+          "id": "consent-strat-20"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.14')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-prospektiv-uebertragen-speichern-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-21"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.15')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-prospektiv-uebertragen"
+              }
+            ]
+          },
+          "id": "consent-strat-22"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.16')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-prospektiv-speichern-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-23"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.17')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-prospektiv-wissenschaftlich-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-24"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.39')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-kkdat-5j-prospektiv-uebertragen-kvnr"
+              }
+            ]
+          },
+          "id": "consent-strat-25"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.18')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomaterial-erheben,-lagern,-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-26"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.19')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-erheben"
+              }
+            ]
+          },
+          "id": "consent-strat-27"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.20')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-lagern-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-28"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.21')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-eigentum-\u00fcbertragen"
+              }
+            ]
+          },
+          "id": "consent-strat-29"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.22')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-wissenschaftlich-nutzen-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-30"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.23')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-analysedaten-zusammenfuehren-dritte"
+              }
+            ]
+          },
+          "id": "consent-strat-31"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.24')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomaterial-zusatzentnahme"
+              }
+            ]
+          },
+          "id": "consent-strat-32"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.25')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-zusatzmengen-entnehmen"
+              }
+            ]
+          },
+          "id": "consent-strat-33"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.50')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomaterial-retrospektiv-speichern,-nutzen"
+              }
+            ]
+          },
+          "id": "consent-strat-34"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.51')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-retrospektiv-lagern-verarbeiten"
+              }
+            ]
+          },
+          "id": "consent-strat-35"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.52')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-retrospektiv-wissenschaftlich-nutzen-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-36"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.53')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-retrospektiv-analysedaten-zusammenfuehren-dritte"
+              }
+            ]
+          },
+          "id": "consent-strat-37"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.54')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomaterial-weitergabe-non-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-38"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.55')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-biomat-bereitstellen-ohne-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-39"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.26')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-erg\u00e4nzungen"
+              }
+            ]
+          },
+          "id": "consent-strat-40"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.27')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-verkn\u00fcpfung-datenbanken"
+              }
+            ]
+          },
+          "id": "consent-strat-41"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.28')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-weitere-erhebung"
+              }
+            ]
+          },
+          "id": "consent-strat-42"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.29')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-weitere-studien"
+              }
+            ]
+          },
+          "id": "consent-strat-43"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.30')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-zusatzbefund"
+              }
+            ]
+          },
+          "id": "consent-strat-44"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.31')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-rekontaktierung-zusatzbefund"
+              }
+            ]
+          },
+          "id": "consent-strat-45"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.32')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-z1-gecco83-nutzung-num/codex"
+              }
+            ]
+          },
+          "id": "consent-strat-46"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.40')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-komplettieren-einmalig"
+              }
+            ]
+          },
+          "id": "consent-strat-47"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.43')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-erheben"
+              }
+            ]
+          },
+          "id": "consent-strat-48"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.33')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-bereitstellen-num/codex"
+              }
+            ]
+          },
+          "id": "consent-strat-49"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.34')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-speichern-verarbeiten-num/codex"
+              }
+            ]
+          },
+          "id": "consent-strat-50"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.41')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-wissenschaftlich-nutzen-covid-19-forschung-eu-dsgvo-konform"
+              }
+            ]
+          },
+          "id": "consent-strat-51"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.42')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-wissenschaftlich-nutzen-pandemie-forschung-eu-dsgvo-konform"
+              }
+            ]
+          },
+          "id": "consent-strat-52"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.56')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-wissenschaftlich-nutzen-num/codex-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-53"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.35')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-z1-gecco83-weitergabe-num/codex-non-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-54"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Consent.provision.provision.code.coding.where(code='2.16.840.1.113883.3.1937.777.24.5.3.36')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "consent-mdat-gecco83-bereitstellen-num/codex-ohne-eu-dsgvo-niveau"
+              }
+            ]
+          },
+          "id": "consent-strat-55"
         }
       ]
     },
     {
-
       "population": [
         {
           "code": {
@@ -266,9 +1519,49 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Specimen?_profile=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
+            "expression": "Specimen?_profile:below=https://www.medizininformatik-initiative.de/fhir/ext/modul-biobank/StructureDefinition/Specimen"
           },
-          "id": "initial-population-identifier-5"
+          "id": "initial-population-identifier-7"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Specimen"
+          },
+          "id": "measure-population-identifier-7"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Specimen.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-7"
+            }
+          ],
+          "id": "measure-observation-identifier-7"
         }
       ],
       "stratifier": [
@@ -285,7 +1578,7 @@
               }
             ]
           },
-          "id": "strat-11"
+          "id": "strat-16"
         },
         {
           "criteria": {
@@ -300,7 +1593,7 @@
               }
             ]
           },
-          "id": "strat-12"
+          "id": "strat-17"
         },
         {
           "criteria": {
@@ -315,7 +1608,7 @@
               }
             ]
           },
-          "id": "strat-13"
+          "id": "strat-18"
         }
       ]
     }

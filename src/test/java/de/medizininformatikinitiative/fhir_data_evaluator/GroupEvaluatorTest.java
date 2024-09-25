@@ -3,11 +3,23 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.AggregateUniqueCount;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable.AggregateUniqueCounter;
 import org.hl7.fhir.r4.context.IWorkerContext;
 import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
-import org.hl7.fhir.r4.model.*;
+import org.hl7.fhir.r4.model.CodeType;
+import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Coding;
+import org.hl7.fhir.r4.model.Condition;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
+import org.hl7.fhir.r4.model.Expression;
+import org.hl7.fhir.r4.model.Extension;
+import org.hl7.fhir.r4.model.Measure;
+import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.Patient;
+import org.hl7.fhir.r4.model.Quantity;
+import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +33,13 @@ import reactor.core.publisher.Flux;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.*;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_INVALID_TYPE;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_MISSING_FIELDS;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_NO_VALUE_FOUND;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_TOO_MANY_VALUES;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_OBSERVATION_CODING;
+import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_POPULATION_CODING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -115,7 +133,7 @@ class GroupEvaluatorTest {
                 .setCriteria(new Expression().setExpression(fhirpath).setLanguage(FHIR_PATH))
                 .setCode(new CodeableConcept(new Coding().setSystem(POPULATION_SYSTEM).setCode(OBSERVATION_POPULATION_CODE)))
                 .setExtension(List.of(
-                        new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                        new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
                         new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))));
     }
 
@@ -327,7 +345,7 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE))))));
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE))))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
@@ -344,7 +362,7 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
 
@@ -363,7 +381,7 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL)))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
@@ -381,7 +399,7 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType("some-other-value"))))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
@@ -416,8 +434,8 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCount.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType(AggregateUniqueCounter.EXTENSION_VALUE)),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
@@ -435,7 +453,7 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
@@ -453,12 +471,12 @@ class GroupEvaluatorTest {
                             getMeasurePopulation(MEASURE_POPULATION_PATH),
                             (Measure.MeasureGroupPopulationComponent) getObservationPopulation(OBSERVATION_POPULATION_PATH)
                                     .setExtension(List.of(
-                                            new Extension(AggregateUniqueCount.EXTENSION_URL).setValue(new CodeType("some-value")),
+                                            new Extension(AggregateUniqueCounter.EXTENSION_URL).setValue(new CodeType("some-value")),
                                             new Extension(CRITERIA_REFERENCE_URL).setValue(new CodeType(MEASURE_POPULATION_ID))))));
 
             assertThatThrownBy(() -> groupEvaluator.evaluateGroup(measureGroup).block())
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCount.EXTENSION_VALUE));
+                    .hasMessage("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCounter.EXTENSION_VALUE));
         }
     }
 

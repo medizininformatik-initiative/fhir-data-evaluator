@@ -1,8 +1,8 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasurePopulation;
-import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.MeasurePopulation;
+import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialAndMeasureIndividual;
 import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
@@ -25,10 +25,12 @@ import static java.util.Objects.requireNonNull;
  * @param stratifierReduceOps         holds one {@link StratifierReduceOp} for each stratifier in a group
  * @param measurePopulationExpression the expression to evaluate the measure population
  */
-public record GroupReduceOpMeasure(List<StratifierReduceOp<InitialAndMeasurePopulation>> stratifierReduceOps,
-                                   ExpressionNode measurePopulationExpression,
-                                   FHIRPathEngine fhirPathEngine)
-        implements BiFunction<GroupResult<InitialAndMeasurePopulation>, Resource, GroupResult<InitialAndMeasurePopulation>> {
+public record GroupReduceOpMeasure(
+        List<StratifierReduceOp<InitialAndMeasurePopulation, InitialAndMeasureIndividual>> stratifierReduceOps,
+        ExpressionNode measurePopulationExpression,
+        FHIRPathEngine fhirPathEngine)
+        implements BiFunction<GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>, Resource,
+        GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>> {
 
     public GroupReduceOpMeasure {
         requireNonNull(stratifierReduceOps);
@@ -37,14 +39,16 @@ public record GroupReduceOpMeasure(List<StratifierReduceOp<InitialAndMeasurePopu
     }
 
     @Override
-    public GroupResult<InitialAndMeasurePopulation> apply(GroupResult<InitialAndMeasurePopulation> groupResult, Resource resource) {
-        return groupResult.applyResource(stratifierReduceOps, resource, calcIncrementPopulation(resource));
+    public GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual> apply(
+            GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual> groupResult,
+            Resource resource) {
+        return groupResult.applyResource(stratifierReduceOps, resource, calcIncrementIndividual(resource));
     }
 
-    private InitialAndMeasurePopulation calcIncrementPopulation(Resource resource) {
-        Optional<Resource> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression, fhirPathEngine);
-        var evaluatedMeasurePop = measurePopResource.isPresent() ? MeasurePopulation.ONE : MeasurePopulation.ZERO;
+    private InitialAndMeasureIndividual calcIncrementIndividual(Resource resource) {
+        Optional<Resource> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression,
+                fhirPathEngine);
 
-        return new InitialAndMeasurePopulation(InitialPopulation.ONE, evaluatedMeasurePop);
+        return new InitialAndMeasureIndividual(measurePopResource.isPresent());
     }
 }
