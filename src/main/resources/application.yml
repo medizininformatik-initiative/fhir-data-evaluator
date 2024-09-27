@@ -6,6 +6,12 @@ fhir:
   maxQueueSize: ${FHIR_MAX_QUEUE_SIZE:500}
   pageCount: ${FHIR_PAGE_COUNT:1000}
   bearerToken: ${FHIR_BEARER_TOKEN:}
+  oauth:
+    issuer:
+      uri: ${FHIR_OAUTH_ISSUER_URI:}
+    client:
+      id: ${FHIR_OAUTH_CLIENT_ID:}
+      secret: ${FHIR_OAUTH_CLIENT_SECRET:}
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}

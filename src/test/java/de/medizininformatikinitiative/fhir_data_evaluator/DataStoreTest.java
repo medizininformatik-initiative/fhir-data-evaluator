@@ -1,6 +1,5 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import okhttp3.mockwebserver.MockResponse;
@@ -19,6 +18,7 @@ import reactor.test.StepVerifier;
 import java.io.IOException;
 
 class DataStoreTest {
+
     private static MockWebServer mockStore;
 
     private DataStore dataStore;

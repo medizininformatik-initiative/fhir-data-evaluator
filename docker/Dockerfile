@@ -7,6 +7,13 @@ RUN apt-get update && apt-get upgrade -y && \
 COPY /target/fhir-data-evaluator.jar /app/
 COPY /src/main/csv-converter.sh /app/csv-converter.sh
 
+ENV CERTIFICATE_PATH=/app/certs
+ENV TRUSTSTORE_PATH=/app/truststore
+ENV TRUSTSTORE_FILE=self-signed-truststore.jks
+
+RUN mkdir -p $CERTIFICATE_PATH $TRUSTSTORE_PATH
+RUN chown 1001 $CERTIFICATE_PATH $TRUSTSTORE_PATH
+
 WORKDIR /app
 USER 1001
 

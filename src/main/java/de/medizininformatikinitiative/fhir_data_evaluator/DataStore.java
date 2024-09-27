@@ -29,7 +29,6 @@ public class DataStore {
         this.pageCount = pageCount;
     }
 
-
     /**
      * Executes {@code populationQuery} and returns all resources found with that query.
      *

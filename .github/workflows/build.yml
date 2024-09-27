@@ -47,7 +47,8 @@ jobs:
 
   build:
     needs: fhir-data-evaluator-ig
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v4
 
@@ -91,6 +92,12 @@ jobs:
 
   integration-test:
     needs: build
+    strategy:
+      matrix:
+        test:
+          - no-auth
+          - basic-auth
+          - oauth
     runs-on: ubuntu-22.04
 
     steps:
@@ -109,47 +116,47 @@ jobs:
       - name: Load FhirDataEvaluator Image
         run: docker load --input /tmp/fhir-data-evaluator.tar
 
-      - name: Run Blaze
-        run: docker compose -f .github/integration-test/docker-compose.yml up -d
+      - name: Run Blaze and Proxy
+        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml up -d --wait --wait-timeout 300 --scale fhir-data-evaluator=0
 
       - name: Wait for Blaze
         run: .github/scripts/wait-for-url.sh http://localhost:8082/health
 
       - name: Load Data
-        run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/test-data
+        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/test-data
 
       - name: Run Integration Test for ICD10
-        run: .github/integration-test/evaluate-icd10.sh /${PWD}/.github/integration-test/measures/icd10-measure.json
+        run: .github/integration-test/evaluate-icd10.sh ${{ matrix.test }}
 
       - name: Run Integration Test for ICD10 to CSV
-        run: .github/integration-test/evaluate-icd10-to-csv.sh /${PWD}/.github/integration-test/measures/icd10-measure.json
+        run: .github/integration-test/evaluate-icd10-to-csv.sh ${{ matrix.test }}
 
       - name: Run Integration Test for ICD10 with Status to CSV
-        run: .github/integration-test/evaluate-icd10WithStatus-to-csv.sh /${PWD}/.github/integration-test/measures/icd10withStatus-measure.json
+        run: .github/integration-test/evaluate-icd10WithStatus-to-csv.sh ${{ matrix.test }}
 
       - name: Run Integration Test for type code
-        run: .github/integration-test/evaluate-code.sh /${PWD}/.github/integration-test/measures/code-measure.json
+        run: .github/integration-test/evaluate-code.sh ${{ matrix.test }}
 
       - name: Run Integration Test for type boolean
-        run: .github/integration-test/evaluate-exists.sh /${PWD}/.github/integration-test/measures/exists-measure.json
+        run: .github/integration-test/evaluate-exists.sh ${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count
-        run: .github/integration-test/evaluate-unique-count.sh /${PWD}/.github/integration-test/measures/unique-count-measure.json
+        run: .github/integration-test/evaluate-unique-count.sh ${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count with CSV
-        run: .github/integration-test/evaluate-unique-count-to-csv.sh /${PWD}/.github/integration-test/measures/unique-count-measure.json
+        run: .github/integration-test/evaluate-unique-count-to-csv.sh ${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count with Components and with CSV
-        run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh /${PWD}/.github/integration-test/measures/unique-count-with-components-measure.json
+        run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh ${{ matrix.test }}
 
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 
       - name: Remove Blaze volumes
-        run: docker compose -f .github/integration-test/docker-compose.yml down -v
+        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml down -v
 
       - name: Run Blaze with fresh volumes
-        run: docker compose -f .github/integration-test/docker-compose.yml up -d
+        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml up -d
 
       - name: Wait for Blaze
         run: .github/scripts/wait-for-url.sh http://localhost:8082/health
@@ -158,11 +165,10 @@ jobs:
         run: .github/integration-test/test-data/get-mii-testdata.sh
 
       - name: Upload New Data
-        run: blazectl --no-progress --server http://localhost:8082/fhir upload .github/integration-test/Vorhofflimmern
+        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/Vorhofflimmern
 
       - name: Run Integration Test multiple stratifiers
-        run: .github/integration-test/evaluate-multiple-stratifiers.sh /${PWD}/.github/integration-test/measures/multiple-stratifiers.json
-
+        run: .github/integration-test/evaluate-multiple-stratifiers.sh ${{ matrix.test }}
 
   push-image:
     needs:
