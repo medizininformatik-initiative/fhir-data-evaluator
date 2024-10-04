@@ -101,7 +101,7 @@ class MeasureEvaluatorIntegrationTest {
 
     @SuppressWarnings("resource")
     @Container
-    private static final GenericContainer<?> blaze = new GenericContainer<>("samply/blaze:0.25")
+    private static final GenericContainer<?> blaze = new GenericContainer<>("samply/blaze:0.30")
             .withImagePullPolicy(PullPolicy.alwaysPull())
             .withEnv("LOG_LEVEL", "debug")
             .withExposedPorts(8080)

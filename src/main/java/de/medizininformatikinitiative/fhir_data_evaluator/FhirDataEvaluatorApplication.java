@@ -10,17 +10,26 @@ import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ClientRegistrations;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
@@ -31,9 +40,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.springframework.security.oauth2.core.AuthorizationGrantType.CLIENT_CREDENTIALS;
 
 @SpringBootApplication
 public class FhirDataEvaluatorApplication {
+
+    private static final Logger logger = LoggerFactory.getLogger(FhirDataEvaluatorApplication.class);
+
+    private static final String REGISTRATION_ID = "openid-connect";
 
     @Bean
     FhirContext context() {
@@ -64,7 +78,8 @@ public class FhirDataEvaluatorApplication {
                                @Value("${fhir.maxConnections}") int maxConnections,
                                @Value("${fhir.maxQueueSize}") int maxQueueSize,
                                @Value("${fhir.bearerToken}") String bearerToken,
-                               @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib) {
+                               @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
+                               @Qualifier("oauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
         ConnectionProvider provider = ConnectionProvider.builder("data-store")
                 .maxConnections(maxConnections)
                 .pendingAcquireMaxCount(maxQueueSize)
@@ -84,7 +99,37 @@ public class FhirDataEvaluatorApplication {
         if (!user.isEmpty() && !password.isEmpty()) {
             builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
         }
-        return builder.build();
+        return builder.filter(oauthExchangeFilterFunction).build();
+    }
+
+    @Bean
+    @Qualifier("oauth")
+    ExchangeFilterFunction oauthExchangeFilterFunction(
+            @Value("${fhir.oauth.issuer.uri}") String issuerUri,
+            @Value("${fhir.oauth.client.id}") String clientId,
+            @Value("${fhir.oauth.client.secret}") String clientSecret) {
+        if (!issuerUri.isEmpty() && !clientId.isEmpty() && !clientSecret.isEmpty()) {
+            logger.debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
+                    issuerUri, clientId);
+            var clientRegistration = ClientRegistrations.fromIssuerLocation(issuerUri)
+                    .registrationId(REGISTRATION_ID)
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
+                    .authorizationGrantType(CLIENT_CREDENTIALS)
+                    .build();
+            var registrations = new InMemoryReactiveClientRegistrationRepository(clientRegistration);
+            var clientService = new InMemoryReactiveOAuth2AuthorizedClientService(registrations);
+            var authorizedClientManager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
+                    registrations, clientService);
+            var oAuthExchangeFilterFunction = new ServerOAuth2AuthorizedClientExchangeFilterFunction(
+                    authorizedClientManager);
+            oAuthExchangeFilterFunction.setDefaultClientRegistrationId(REGISTRATION_ID);
+
+            return oAuthExchangeFilterFunction;
+        } else {
+            logger.debug("Skipping OAuth2 authentication.");
+            return (request, next) -> next.exchange(request);
+        }
     }
 
     public static void main(String[] args) {
@@ -92,20 +137,21 @@ public class FhirDataEvaluatorApplication {
         app.setWebApplicationType(WebApplicationType.NONE);
         app.run(args);
     }
-
 }
 
 @Component
 @Profile("!test")
 class EvaluationExecutor implements CommandLineRunner {
 
+    private final static double NANOS_IN_SECOND = 1_000_000_000.0;
+
     @Value("${measureFile}")
     private String measureFilePath;
     @Value("${outputDir}")
     private String outputDirectory;
+
     private final MeasureEvaluator measureEvaluator;
     private final IParser parser;
-    private final double NANOS_IN_SECOND = 1_000_000_000.0;
     private final Quantity durationQuantity = new Quantity()
             .setCode("s")
             .setSystem("http://unitsofmeasure.org")
