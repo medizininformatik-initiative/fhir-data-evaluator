@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+TRUSTSTORE_FILE="/app/truststore/self-signed-truststore.jks"
+TRUSTSTORE_PASS=${TRUSTSTORE_PASS:-changeit}
+KEY_PASS=${KEY_PASS:-changeit}
+
 if [ ! -w /app/output ]; then
     echo "Missing writing permissions on output directory" >&2
     exit 1
@@ -10,11 +14,6 @@ measureName="$(jq -c --raw-output '.name' /app/measure.json)"
 outputDir="$today-$measureName"
 mkdir -p /app/output/"$outputDir"
 cp /app/measure.json /app/output/"$outputDir"/measure.json
-
-
-TRUSTSTORE_FILE="/app/truststore/self-signed-truststore.jks"
-TRUSTSTORE_PASS=${TRUSTSTORE_PASS:-changeit}
-KEY_PASS=${KEY_PASS:-changeit}
 
 shopt -s nullglob
 IFS=$'\n'
