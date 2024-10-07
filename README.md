@@ -1,6 +1,4 @@
-
 # Fhir Data Evaluator
-
 
 ## Overview
 
@@ -77,17 +75,20 @@ docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/ap
 
 ## Environment Variables
 
-| Name                   | Default                    | Description                                                                            |
-|:-----------------------|:---------------------------|:---------------------------------------------------------------------------------------|
-| FHIR_SERVER            | http://localhost:8080/fhir | The base URL of the FHIR server to use.                                                |
-| FHIR_USER              |                            | The username to use for HTTP Basic Authentication.                                     |
-| FHIR_PASSWORD          |                            | The password to use for HTTP Basic Authentication.                                     |
-| FHIR_MAX_CONNECTIONS   | 4                          | The maximum number of connections to open towards the FHIR server.                     |
-| FHIR_MAX_QUEUE_SIZE    | 500                        | The maximum number FHIR server requests to queue before returning an error.            |
-| FHIR_PAGE_COUNT        | 1000                       | The number of resources per page to request from the FHIR server.                      |
-| FHIR_BEARER_TOKEN      |                            | Bearer token for authentication.                                                       |
-| MAX_IN_MEMORY_SIZE_MIB | 10                         | The maximum in-memory buffer size for the webclient in MiB.                            |
-| CONVERT_TO_CSV         | false                      | Whether for the MeasureReport should be generated CSV files.                           |
+| Name                     | Default                    | Description                                                                 |
+|:-------------------------|:---------------------------|:----------------------------------------------------------------------------|
+| FHIR_SERVER              | http://localhost:8080/fhir | The base URL of the FHIR server to use.                                     |
+| FHIR_USER                |                            | The username to use for HTTP Basic Authentication.                          |
+| FHIR_PASSWORD            |                            | The password to use for HTTP Basic Authentication.                          |
+| FHIR_MAX_CONNECTIONS     | 4                          | The maximum number of connections to open towards the FHIR server.          |
+| FHIR_MAX_QUEUE_SIZE      | 500                        | The maximum number FHIR server requests to queue before returning an error. |
+| FHIR_PAGE_COUNT          | 1000                       | The number of resources per page to request from the FHIR server.           |
+| FHIR_BEARER_TOKEN        |                            | Bearer token for authentication.                                            |
+| FHIR_OAUTH_ISSUER_URI    |                            | The issuer URI of the OpenID Connect provider.                              |
+| FHIR_OAUTH_CLIENT_ID     |                            | The client ID to use for authentication with OpenID Connect provider.       |
+| FHIR_OAUTH_CLIENT_SECRET |                            | The client secret to use for authentication with OpenID Connect provider.   |
+| MAX_IN_MEMORY_SIZE_MIB   | 10                         | The maximum in-memory buffer size for the webclient in MiB.                 |
+| CONVERT_TO_CSV           | false                      | Whether for the MeasureReport should be generated CSV files.                |
 
 
 ## Documentation

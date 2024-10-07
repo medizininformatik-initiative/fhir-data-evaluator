@@ -21,7 +21,7 @@ ca_files=(certs/*.pem)
 
 if [ ! "${#ca_files[@]}" -eq 0 ]; then
 
-    echo "# At least one CA file with extension *.pem found in certs folder -> starting flare with own CAs"
+    echo "# At least one CA file with extension *.pem found in certs folder -> starting fhir data evaluator with own CAs"
 
     if [[ -f "$TRUSTSTORE_FILE" ]]; then
           echo "## Truststore already exists -> resetting truststore"
@@ -41,9 +41,10 @@ if [ ! "${#ca_files[@]}" -eq 0 ]; then
 
     java -Djavax.net.ssl.trustStore="$TRUSTSTORE_FILE" -Djavax.net.ssl.trustStorePassword="$TRUSTSTORE_PASS" -jar fhir-data-evaluator.jar "$outputDir"
 else
-    echo "# No CA *.pem cert files found in /app/certs -> starting flare without own CAs"
+    echo "# No CA *.pem cert files found in /app/certs -> starting fhir data evaluator without own CAs"
     java -jar fhir-data-evaluator.jar "$outputDir"
 fi
+
 
 if [ "${CONVERT_TO_CSV}" = true ]; then
   bash /app/csv-converter.sh /app/output/"$outputDir"
