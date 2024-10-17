@@ -1,0 +1,48 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "DocumentReference",
+        "masterIdentifier": {
+          "value": "",
+          "system": ""
+        },
+        "author": [
+          {
+            "type": "Organization",
+            "identifier": {
+              "value": "",
+              "system": ""
+            }
+          }
+        ],
+        "docStatus": "final",
+        "date": "",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "application/fhir+xml",
+              "url": ""
+            }
+          }
+        ],
+        "status": "current"
+      },
+      "fullUrl": "",
+      "request": {
+        "url": "",
+        "method": "PUT"
+      }
+    },
+    {
+      "resource": {},
+      "fullUrl": "",
+      "request": {
+        "url": "MeasureReport",
+        "method": "POST"
+      }
+    }
+  ]
+}

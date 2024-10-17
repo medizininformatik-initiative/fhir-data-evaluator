@@ -152,6 +152,18 @@ jobs:
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 
+      - name: Run Integration Test for Posting the MeasureReport to the FHIR server
+        run: .github/integration-test/evaluate-and-post-report.sh Test_PROJECT_Evaluation_1
+        if: matrix.test == 'no-auth'
+
+      - name: Run Integration Test for Posting the MeasureReport to the FHIR server with the Same Project Identifier
+        run: .github/integration-test/evaluate-and-post-update.sh Test_PROJECT_Evaluation_1
+        if: matrix.test == 'no-auth'
+
+      - name: Run Integration Test for Posting the MeasureReport to the FHIR server with a Different Project Identifier
+        run: .github/integration-test/evaluate-and-post-different-doc-ref.sh Test_PROJECT_Evaluation_2
+        if: matrix.test == 'no-auth'
+
       - name: Remove Blaze volumes
         run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml down -v
 

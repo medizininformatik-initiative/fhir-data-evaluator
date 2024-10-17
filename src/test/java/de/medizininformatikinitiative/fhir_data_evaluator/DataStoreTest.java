@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -19,64 +20,125 @@ import java.io.IOException;
 
 class DataStoreTest {
 
-    private static MockWebServer mockStore;
+    @Nested
+    class TestGet {
+        private static MockWebServer mockStore;
 
-    private DataStore dataStore;
+        private DataStore dataStore;
 
-    @BeforeAll
-    static void setUp() throws IOException {
-        mockStore = new MockWebServer();
-        mockStore.start();
+        @BeforeAll
+        static void setUp() throws IOException {
+            mockStore = new MockWebServer();
+            mockStore.start();
+        }
+
+        @AfterAll
+        static void tearDown() throws IOException {
+            mockStore.shutdown();
+        }
+
+        @BeforeEach
+        void initialize() {
+            WebClient client = WebClient.builder()
+                    .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
+                    .defaultHeader("Accept", "application/fhir+json")
+                    .build();
+            IParser parser = FhirContext.forR4().newJsonParser();
+            dataStore = new DataStore(client, parser, 1000, null);
+        }
+
+        @ParameterizedTest
+        @DisplayName("retires the request")
+        @ValueSource(ints = {404, 500, 503, 504})
+        void execute_retry(int statusCode) {
+            mockStore.enqueue(new MockResponse().setResponseCode(statusCode));
+            mockStore.enqueue(new MockResponse().setResponseCode(200)
+                    .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}}]}"));
+
+            var result = dataStore.getResources("/Observation");
+            StepVerifier.create(result).expectNextCount(1).verifyComplete();
+        }
+
+        @Test
+        @DisplayName("fails after 3 unsuccessful retires")
+        void execute_retry_fails() {
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(200));
+
+            var result = dataStore.getResources("/Observation");
+
+            StepVerifier.create(result).expectErrorMessage("Retries exhausted: 3/3").verify();
+        }
+
+        @Test
+        @DisplayName("doesn't retry a 400")
+        void execute_retry_400() {
+            mockStore.enqueue(new MockResponse().setResponseCode(400));
+
+            var result = dataStore.getResources("/Observation");
+
+            StepVerifier.create(result).expectError(WebClientResponseException.BadRequest.class).verify();
+        }
     }
 
-    @AfterAll
-    static void tearDown() throws IOException {
-        mockStore.shutdown();
-    }
+    @Nested
+    class TestPost {
+        private static MockWebServer mockStore;
 
-    @BeforeEach
-    void initialize() {
-        WebClient client = WebClient.builder()
-                .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
-                .defaultHeader("Accept", "application/fhir+json")
-                .build();
-        IParser parser = FhirContext.forR4().newJsonParser();
-        dataStore = new DataStore(client, parser, 1000);
-    }
+        private DataStore dataStore;
 
-    @ParameterizedTest
-    @DisplayName("retires the request")
-    @ValueSource(ints = {404, 500, 503, 504})
-    void execute_retry(int statusCode) {
-        mockStore.enqueue(new MockResponse().setResponseCode(statusCode));
-        mockStore.enqueue(new MockResponse().setResponseCode(200)
-                .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}}]}"));
+        @BeforeAll
+        static void setUp() throws IOException {
+            mockStore = new MockWebServer();
+            mockStore.start();
+        }
 
-        var result = dataStore.getPopulation("/Observation");
-        StepVerifier.create(result).expectNextCount(1).verifyComplete();
-    }
+        @AfterAll
+        static void tearDown() throws IOException {
+            mockStore.shutdown();
+        }
 
-    @Test
-    @DisplayName("fails after 3 unsuccessful retires")
-    void execute_retry_fails() {
-        mockStore.enqueue(new MockResponse().setResponseCode(500));
-        mockStore.enqueue(new MockResponse().setResponseCode(500));
-        mockStore.enqueue(new MockResponse().setResponseCode(500));
-        mockStore.enqueue(new MockResponse().setResponseCode(500));
-        mockStore.enqueue(new MockResponse().setResponseCode(200));
+        @BeforeEach
+        void initialize() {
+            WebClient client = WebClient.builder()
+                    .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
+                    .defaultHeader("Accept", "application/fhir+json")
+                    .build();
+            IParser parser = FhirContext.forR4().newJsonParser();
+            dataStore = new DataStore(client, parser, 1000, null);
+        }
 
-        var result = dataStore.getPopulation("/Observation");
+        @Test
+        void test_errorResponse_400() {
+            mockStore.enqueue(new MockResponse().setResponseCode(400).setBody("error encountered"));
 
-        StepVerifier.create(result).expectErrorMessage("Retries exhausted: 3/3").verify();
-    }
+            var result = dataStore.postReport("");
 
-    @Test
-    @DisplayName("doesn't retry a 400")
-    void execute_retry_400() {
-        mockStore.enqueue(new MockResponse().setResponseCode(400));
+            StepVerifier.create(result).verifyErrorMessage(
+                    "Failed uploading MeasureReport with status code: '400 BAD_REQUEST' and body: 'error encountered'");
+        }
 
-        var result = dataStore.getPopulation("/Observation");
+        @Test
+        void test_errorResponse_withoutBody() {
+            mockStore.enqueue(new MockResponse().setResponseCode(400));
 
-        StepVerifier.create(result).expectError(WebClientResponseException.BadRequest.class).verify();
+            var result = dataStore.postReport("");
+
+            StepVerifier.create(result).verifyErrorMessage(
+                    "Failed uploading MeasureReport with status code: '400 BAD_REQUEST'");
+        }
+
+        @Test
+        void test_errorResponse_500() {
+            mockStore.enqueue(new MockResponse().setResponseCode(500).setBody("error encountered"));
+
+            var result = dataStore.postReport("");
+
+            StepVerifier.create(result).verifyErrorMessage(
+                    "Failed uploading MeasureReport with status code: '500 INTERNAL_SERVER_ERROR' and body: 'error encountered'");
+        }
     }
 }
