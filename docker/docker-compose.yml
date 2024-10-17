@@ -3,7 +3,7 @@ services:
     image: ghcr.io/medizininformatik-initiative/fhir-data-evaluator:develop
     environment:
       CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
-      FHIR_SERVER: ${FDE_FHIR_SERVER:-http://fhir-server:8080/fhir}
+      FHIR_SERVER: ${FDE_FHIR_SERVER:-http://localhost:8080/fhir}
       FHIR_USER: ${FDE_FHIR_USER:-}
       FHIR_PASSWORD: ${FDE_FHIR_PASSWORD:-}
       FHIR_MAX_CONNECTIONS: ${FDE_FHIR_MAX_CONNECTIONS:-4}
@@ -11,11 +11,13 @@ services:
       FHIR_PAGE_COUNT: ${FDE_FHIR_PAGE_COUNT:-1000}
       FHIR_BEARER_TOKEN: ${FDE_FHIR_BEARER_TOKEN:-}
       MAX_IN_MEMORY_SIZE_MIB: ${FDE_MAX_IN_MEMORY_SIZE_MIB:-10}
+      REPORT_DESTINATION_SERVER: ${FDE_REPORT_DESTINATION_SERVER:-http://localhost:8080/fhir}
+      SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
+      IDENTIFIER_SYSTEM: ${FDE_IDENTIFIER_SYSTEM:-}
+      IDENTIFIER_VALUE: ${FDE_IDENTIFIER_VALUE:-}
+      M_IDENTIFIER_SYSTEM: ${FDE_M_IDENTIFIER_SYSTEM:-}
+      M_IDENTIFIER_VALUE: ${FDE_M_IDENTIFIER_VALUE:-}
+      TZ: ${FDE_TZ:-Europe/Berlin}
     volumes:
     - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
     - "${FDE_OUTPUT_DIR:-../output}:/app/output"
-
-
-
-
-
