@@ -10,6 +10,7 @@ import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
@@ -45,13 +46,16 @@ import static org.springframework.security.oauth2.core.AuthorizationGrantType.CL
 @SpringBootApplication
 public class FhirDataEvaluatorApplication {
 
-    private static final Logger logger = LoggerFactory.getLogger(FhirDataEvaluatorApplication.class);
-
     private static final String REGISTRATION_ID = "openid-connect";
 
     @Bean
     FhirContext context() {
         return FhirContext.forR4();
+    }
+
+    @Bean
+    public Logger logger() {
+        return LoggerFactory.getLogger(FhirDataEvaluatorApplication.class);
     }
 
     @Bean
@@ -109,7 +113,7 @@ public class FhirDataEvaluatorApplication {
             @Value("${fhir.oauth.client.id}") String clientId,
             @Value("${fhir.oauth.client.secret}") String clientSecret) {
         if (!issuerUri.isEmpty() && !clientId.isEmpty() && !clientSecret.isEmpty()) {
-            logger.debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
+            logger().debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
                     issuerUri, clientId);
             var clientRegistration = ClientRegistrations.fromIssuerLocation(issuerUri)
                     .registrationId(REGISTRATION_ID)
@@ -127,7 +131,7 @@ public class FhirDataEvaluatorApplication {
 
             return oAuthExchangeFilterFunction;
         } else {
-            logger.debug("Skipping OAuth2 authentication.");
+            logger().debug("Skipping OAuth2 authentication.");
             return (request, next) -> next.exchange(request);
         }
     }
@@ -144,11 +148,14 @@ public class FhirDataEvaluatorApplication {
 class EvaluationExecutor implements CommandLineRunner {
 
     private final static double NANOS_IN_SECOND = 1_000_000_000.0;
+    private final DataStore dataStore;
 
     @Value("${measureFile}")
     private String measureFilePath;
     @Value("${outputDir}")
     private String outputDirectory;
+    @Value("${sendReportToServer}")
+    private boolean sendReportToServer;
 
     private final MeasureEvaluator measureEvaluator;
     private final IParser parser;
@@ -157,9 +164,10 @@ class EvaluationExecutor implements CommandLineRunner {
             .setSystem("http://unitsofmeasure.org")
             .setUnit("u");
 
-    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser) {
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser, DataStore dataStore) {
         this.measureEvaluator = measureEvaluator;
         this.parser = parser;
+        this.dataStore = dataStore;
     }
 
     private String getMeasureFile() {
@@ -172,6 +180,11 @@ class EvaluationExecutor implements CommandLineRunner {
         return readMeasure;
     }
 
+    private String addReportToBundle(String bundle, String report) {
+        JSONObject jo = new JSONObject(bundle);
+        jo.getJSONArray("entry").getJSONObject(1).put("resource", new JSONObject(report));
+        return jo.toString();
+    }
 
     public void run(String... args) {
         String measureFile = getMeasureFile();
@@ -187,12 +200,18 @@ class EvaluationExecutor implements CommandLineRunner {
 
         String directoryAddition = args[0];
 
-        try {
-            FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
-            fileWriter.write(parser.encodeResourceToString(measureReport));
-            fileWriter.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        String parsedReport = parser.encodeResourceToString(measureReport);
+
+        if(sendReportToServer) {
+            dataStore.postReport(addReportToBundle(args[1], parsedReport));
+        } else {
+            try {
+                FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
+                fileWriter.write(parsedReport);
+                fileWriter.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

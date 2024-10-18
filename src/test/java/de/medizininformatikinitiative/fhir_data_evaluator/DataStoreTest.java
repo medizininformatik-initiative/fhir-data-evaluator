@@ -11,11 +11,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 class DataStoreTest {
 
@@ -35,13 +37,13 @@ class DataStoreTest {
     }
 
     @BeforeEach
-    void initialize() {
+    void initialize() throws URISyntaxException {
         WebClient client = WebClient.builder()
                 .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
                 .defaultHeader("Accept", "application/fhir+json")
                 .build();
         IParser parser = FhirContext.forR4().newJsonParser();
-        dataStore = new DataStore(client, parser, 1000);
+        dataStore = new DataStore(client, parser, LoggerFactory.getLogger(DataStoreTest.class), 1000, null);
     }
 
     @ParameterizedTest
