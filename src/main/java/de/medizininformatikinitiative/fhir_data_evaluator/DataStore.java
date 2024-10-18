@@ -3,8 +3,10 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -13,6 +15,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -21,12 +24,17 @@ public class DataStore {
 
     private final WebClient client;
     private final IParser parser;
+    private final Logger logger;
     private final int pageCount;
+    private final URI reportDestinationServer;
 
-    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount) {
+    public DataStore(WebClient client, IParser parser, Logger logger, @Value("${fhir.pageCount}") int pageCount,
+                     @Value("${fhir.reportDestinationServer}") String reportDestinationServer) throws URISyntaxException {
         this.client = client;
         this.parser = parser;
+        this.logger = logger;
         this.pageCount = pageCount;
+        this.reportDestinationServer = reportDestinationServer == null ? null : new URI(reportDestinationServer);
     }
 
     /**
@@ -48,6 +56,26 @@ public class DataStore {
                         .filter(e -> e instanceof WebClientResponseException &&
                                 shouldRetry(((WebClientResponseException) e).getStatusCode())))
                 .flatMap(bundle -> Flux.fromStream(bundle.getEntry().stream().map(Bundle.BundleEntryComponent::getResource)));
+    }
+
+    public void postReport(String bundle) {
+        logger.info("Uploading MeasureReport to FHIR server at {}", reportDestinationServer);
+        client.post()
+                .uri(reportDestinationServer)
+                .contentType(MediaType.valueOf("application/fhir+json"))
+                .bodyValue(bundle)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), clientResponse ->
+                        clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                logger.error("Failed with status code: {} and body: {}", clientResponse.statusCode(), errorBody);
+                                return Mono.empty();
+                            })
+                )
+                .bodyToMono(String.class)
+                .block();
+
+        logger.info("Successfully uploaded MeasureReport to FHIR server");
     }
 
     private static boolean shouldRetry(HttpStatusCode code) {
