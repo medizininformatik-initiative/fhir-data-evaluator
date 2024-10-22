@@ -15,6 +15,12 @@ services:
     environment:
       CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
       FHIR_SERVER: "http://fhir-server:8080/fhir"
+      FHIR_REPORT_DESTINATION_SERVER: ${FDE_FHIR_REPORT_DESTINATION_SERVER:-http://localhost:8080/fhir}
+      SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
+      AUTHOR_IDENTIFIER_SYSTEM: ${FDE_AUTHOR_IDENTIFIER_SYSTEM:-}
+      AUTHOR_IDENTIFIER_VALUE: ${FDE_AUTHOR_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM: ${FDE_PROJECT_IDENTIFIER_SYSTEM:-}
+      PROJECT_IDENTIFIER_VALUE: ${FDE_PROJECT_IDENTIFIER_VALUE:-}
     volumes:
       - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
       - "${FDE_OUTPUT_DIR:-../output}:/app/output"

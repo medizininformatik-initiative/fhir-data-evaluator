@@ -10,22 +10,23 @@ import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.utils.FHIRPathEngine;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ClientRegistrations;
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
@@ -35,23 +36,30 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 
 import static org.springframework.security.oauth2.core.AuthorizationGrantType.CLIENT_CREDENTIALS;
 
 @SpringBootApplication
 public class FhirDataEvaluatorApplication {
 
-    private static final Logger logger = LoggerFactory.getLogger(FhirDataEvaluatorApplication.class);
-
     private static final String REGISTRATION_ID = "openid-connect";
 
     @Bean
     FhirContext context() {
         return FhirContext.forR4();
+    }
+
+    @Bean
+    public Logger logger() {
+        return LoggerFactory.getLogger(FhirDataEvaluatorApplication.class);
     }
 
     @Bean
@@ -109,7 +117,7 @@ public class FhirDataEvaluatorApplication {
             @Value("${fhir.oauth.client.id}") String clientId,
             @Value("${fhir.oauth.client.secret}") String clientSecret) {
         if (!issuerUri.isEmpty() && !clientId.isEmpty() && !clientSecret.isEmpty()) {
-            logger.debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
+            logger().debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
                     issuerUri, clientId);
             var clientRegistration = ClientRegistrations.fromIssuerLocation(issuerUri)
                     .registrationId(REGISTRATION_ID)
@@ -127,7 +135,7 @@ public class FhirDataEvaluatorApplication {
 
             return oAuthExchangeFilterFunction;
         } else {
-            logger.debug("Skipping OAuth2 authentication.");
+            logger().debug("Skipping OAuth2 authentication.");
             return (request, next) -> next.exchange(request);
         }
     }
@@ -144,11 +152,26 @@ public class FhirDataEvaluatorApplication {
 class EvaluationExecutor implements CommandLineRunner {
 
     private final static double NANOS_IN_SECOND = 1_000_000_000.0;
+    private final DataStore dataStore;
+    private final Logger logger = LoggerFactory.getLogger(EvaluationExecutor.class);
 
     @Value("${measureFile}")
     private String measureFilePath;
     @Value("${outputDir}")
     private String outputDirectory;
+    @Value("${sendReportToServer}")
+    private boolean sendReportToServer;
+    @Value("${authorIdentifierSystem}")
+    private String authorIdentifierSystem;
+    @Value("${authorIdentifierValue}")
+    private String authorIdentifierValue;
+    @Value("${projectIdentifierSystem}")
+    private String projectIdentifierSystem;
+    @Value("${projectIdentifierValue}")
+    private String projectIdentifierValue;
+    @Value("${fhir.reportDestinationServer}")
+    private String reportDestinationServer;
+    private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
 
     private final MeasureEvaluator measureEvaluator;
     private final IParser parser;
@@ -157,9 +180,10 @@ class EvaluationExecutor implements CommandLineRunner {
             .setSystem("http://unitsofmeasure.org")
             .setUnit("u");
 
-    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser) {
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser, DataStore dataStore) {
         this.measureEvaluator = measureEvaluator;
         this.parser = parser;
+        this.dataStore = dataStore;
     }
 
     private String getMeasureFile() {
@@ -172,6 +196,52 @@ class EvaluationExecutor implements CommandLineRunner {
         return readMeasure;
     }
 
+    private String readFromInputStream(InputStream inputStream)
+            throws IOException {
+        StringBuilder resultStringBuilder = new StringBuilder();
+        try (BufferedReader br
+                     = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                resultStringBuilder.append(line).append("\n");
+            }
+        }
+        return resultStringBuilder.toString();
+    }
+
+    private String getBundleTemplate() {
+        try {
+            return readFromInputStream(EvaluationExecutor.class.getResourceAsStream(TRANSACTION_BUNDLE_TEMPLATE_FILE));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String createTransactionBundle(String date, String report) {
+        JSONObject jo = new JSONObject(getBundleTemplate());
+
+        var authorIdent = jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource")
+                .getJSONArray("author").getJSONObject(0).getJSONObject("identifier");
+        var masterIdent = jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource")
+                .getJSONObject("masterIdentifier");
+
+        authorIdent.put("system", authorIdentifierSystem);
+        authorIdent.put("value", authorIdentifierValue);
+        masterIdent.put("system", projectIdentifierSystem);
+        masterIdent.put("value", projectIdentifierValue);
+
+        jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource").put("date", date);
+
+        var docRefId = "urn::uuid:" + UUID.randomUUID();
+        var reportId = "urn::uuid:" + UUID.randomUUID();
+        jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource").getJSONArray("content")
+                .getJSONObject(0).getJSONObject("attachment").put("url", reportId);
+        jo.getJSONArray("entry").getJSONObject(0).put("fullUrl", docRefId);
+
+        jo.getJSONArray("entry").getJSONObject(1).put("fullUrl", reportId);
+        jo.getJSONArray("entry").getJSONObject(1).put("resource", new JSONObject(report));
+        return jo.toString();
+    }
 
     public void run(String... args) {
         String measureFile = getMeasureFile();
@@ -186,13 +256,28 @@ class EvaluationExecutor implements CommandLineRunner {
                 .setValue(durationQuantity.setValue(evaluationDuration)));
 
         String directoryAddition = args[0];
+        String dateForBundle = args[1];
 
-        try {
-            FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
-            fileWriter.write(parser.encodeResourceToString(measureReport));
-            fileWriter.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        String parsedReport = parser.encodeResourceToString(measureReport);
+
+        if(sendReportToServer) {
+            logger.info("Uploading MeasureReport to FHIR server at {}", reportDestinationServer);
+            try {
+                dataStore.postReport(createTransactionBundle(dateForBundle, parsedReport))
+                        .doOnSuccess(v -> logger.info("Successfully uploaded MeasureReport to FHIR server"))
+                        .block();
+            } catch (RuntimeException e) {
+                logger.error(e.getMessage());
+            }
+
+        } else {
+            try {
+                FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
+                fileWriter.write(parsedReport);
+                fileWriter.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
