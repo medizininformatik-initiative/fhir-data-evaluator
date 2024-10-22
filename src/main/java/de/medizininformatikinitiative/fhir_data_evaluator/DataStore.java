@@ -3,7 +3,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Resource;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -14,8 +13,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -24,17 +23,15 @@ public class DataStore {
 
     private final WebClient client;
     private final IParser parser;
-    private final Logger logger;
     private final int pageCount;
     private final URI reportDestinationServer;
 
-    public DataStore(WebClient client, IParser parser, Logger logger, @Value("${fhir.pageCount}") int pageCount,
-                     @Value("${fhir.reportDestinationServer}") String reportDestinationServer) throws URISyntaxException {
+    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount,
+                     @Value("${fhir.reportDestinationServer}") URI reportDestinationServer) {
         this.client = client;
         this.parser = parser;
-        this.logger = logger;
         this.pageCount = pageCount;
-        this.reportDestinationServer = reportDestinationServer == null ? null : new URI(reportDestinationServer);
+        this.reportDestinationServer = reportDestinationServer;
     }
 
     /**
@@ -58,24 +55,27 @@ public class DataStore {
                 .flatMap(bundle -> Flux.fromStream(bundle.getEntry().stream().map(Bundle.BundleEntryComponent::getResource)));
     }
 
-    public void postReport(String bundle) {
-        logger.info("Uploading MeasureReport to FHIR server at {}", reportDestinationServer);
-        client.post()
+    /**
+     * Posts a FHIR Bundle to a FHIR server.
+     *
+     * @param bundle    the Bundle to post to the FHIR server
+     * @return          a {@link Mono<Void>} that completes when the request is successful, or  signals an error Mono on
+     *                  failure
+     */
+    public Mono<Void> postReport(String bundle) {
+        return client.post()
                 .uri(reportDestinationServer)
                 .contentType(MediaType.valueOf("application/fhir+json"))
                 .bodyValue(bundle)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), clientResponse ->
                         clientResponse.bodyToMono(String.class)
-                            .flatMap(errorBody -> {
-                                logger.error("Failed with status code: {} and body: {}", clientResponse.statusCode(), errorBody);
-                                return Mono.empty();
-                            })
-                )
-                .bodyToMono(String.class)
-                .block();
-
-        logger.info("Successfully uploaded MeasureReport to FHIR server");
+                                .map(errorBody ->
+                                        new IOException(String.format("Failed uploading MeasureReport with status " +
+                                                "code: '%s' and body: '%s'", clientResponse.statusCode(), errorBody)))
+                                .switchIfEmpty(Mono.error(new IOException(String.format("Failed uploading MeasureReport " +
+                                        "with status code: '%s'", clientResponse.statusCode())))))
+                .bodyToMono(Void.class);
     }
 
     private static boolean shouldRetry(HttpStatusCode code) {
