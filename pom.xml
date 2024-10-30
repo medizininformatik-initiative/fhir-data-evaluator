@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>de.medizininformatikinitiative</groupId>
 	<artifactId>fhir_data_evaluator</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
+	<version>1.1.0</version>
 	<name>Fhir Data Evaluator</name>
 	<description>Fhir Data Evaluator</description>
 	<properties>
