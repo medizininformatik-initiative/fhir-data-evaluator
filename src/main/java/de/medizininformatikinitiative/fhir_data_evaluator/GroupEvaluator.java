@@ -45,7 +45,7 @@ public class GroupEvaluator {
      * @throws IllegalArgumentException if the group doesn't have exactly one initial population
      */
     public Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroup(Measure.MeasureGroupComponent group) {
-        var population = dataStore.getPopulation("/" +
+        var population = dataStore.getResources("/" +
                 findFhirInitialPopulation(group).getCriteria().getExpressionElement());
 
         var measurePopulationExpression = findMeasurePopulationExpression(group);

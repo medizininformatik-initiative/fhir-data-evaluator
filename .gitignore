@@ -35,3 +35,4 @@ build/
 output
 
 docker/.env
+certs

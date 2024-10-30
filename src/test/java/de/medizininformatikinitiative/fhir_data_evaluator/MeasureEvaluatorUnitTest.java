@@ -68,7 +68,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void oneGroup_oneStratifier_ofOneComponent() {
-        when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                 .setStratifier(List.of(
                         new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
@@ -90,7 +90,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void oneGroup_oneStratifier_ofTwoComponents() {
-        when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
                 getCondition().setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                 .setStratifier(List.of(
@@ -117,7 +117,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void twoGroups_sameStratifier() {
-        when(dataStore.getPopulation("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
         Measure.MeasureGroupComponent measureGroup_1 = getMeasureGroup()
                 .setStratifier(List.of(
                         new Measure.MeasureGroupStratifierComponent()

@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>de.medizininformatikinitiative</groupId>
 	<artifactId>fhir_data_evaluator</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<name>Fhir Data Evaluator</name>
 	<description>Fhir Data Evaluator</description>
 	<properties>
@@ -58,6 +58,10 @@
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-client</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
 			<version>4.7.0</version>
@@ -89,6 +93,11 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20240303</version>
 		</dependency>
 	</dependencies>
 	<dependencyManagement>

@@ -1,14 +1,15 @@
 #!/bin/bash -e
 
-INPUT_MEASURE=$1
-BASE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-multiple-stratifiers
-mkdir "$BASE_OUTPUT_DIR"
+DOCKER_COMPOSE_FILE=.github/integration-test/$1/docker-compose.yml
+export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/multiple-stratifiers-measure.json
+export FDE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-multiple-stratifiers-test
+export FDE_CONVERT_TO_CSV=false
 
-docker run -v "$INPUT_MEASURE":/app/measure.json -v "$BASE_OUTPUT_DIR":/app/output/ -e FHIR_SERVER=http://fhir-server:8080/fhir \
-      -e TZ="$(cat /etc/timezone)" --network integration-test_testing-network fhir-data-evaluator
+mkdir "$FDE_OUTPUT_DIR"
+docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-data-evaluator
 
 today=$(date +"%Y-%m-%d")
-OUTPUT_DIR=$(find "$BASE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
+OUTPUT_DIR=$(find "$FDE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
 REPORT="$OUTPUT_DIR/measure-report.json"
 
 find_stratum() {

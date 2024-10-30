@@ -6,6 +6,18 @@ fhir:
   maxQueueSize: ${FHIR_MAX_QUEUE_SIZE:500}
   pageCount: ${FHIR_PAGE_COUNT:1000}
   bearerToken: ${FHIR_BEARER_TOKEN:}
+  oauth:
+    issuer:
+      uri: ${FHIR_OAUTH_ISSUER_URI:}
+    client:
+      id: ${FHIR_OAUTH_CLIENT_ID:}
+      secret: ${FHIR_OAUTH_CLIENT_SECRET:}
+  reportDestinationServer: ${FHIR_REPORT_DESTINATION_SERVER:http://localhost:8080/fhir}
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}
+sendReportToServer: ${SEND_REPORT_TO_SERVER:false}
+authorIdentifierSystem: ${AUTHOR_IDENTIFIER_SYSTEM:http://dsf.dev/sid/organization-identifier}
+authorIdentifierValue: ${AUTHOR_IDENTIFIER_VALUE:}
+projectIdentifierSystem: ${PROJECT_IDENTIFIER_SYSTEM:http://medizininformatik-initiative.de/sid/project-identifier}
+projectIdentifierValue: ${PROJECT_IDENTIFIER_VALUE:}
