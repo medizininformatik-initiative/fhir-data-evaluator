@@ -1,10 +1,10 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +34,7 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorT
 import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getCondition;
 import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getInitialPopulation;
 import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.getMeasureGroup;
+import static de.medizininformatikinitiative.fhir_data_evaluator.GroupEvaluatorTest.wrapWithoutIncludes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +43,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Mock
     DataStore dataStore;
-    FHIRPathEngine pathEngine;
+    IFhirPath pathEngine;
     MeasureEvaluator measureEvaluator;
 
     @BeforeEach
@@ -68,7 +69,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void oneGroup_oneStratifier_ofOneComponent() {
-        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                 .setStratifier(List.of(
                         new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
@@ -90,7 +91,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void oneGroup_oneStratifier_ofTwoComponents() {
-        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                 getCondition().setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                 .setStratifier(List.of(
@@ -117,7 +118,7 @@ public class MeasureEvaluatorUnitTest {
 
     @Test
     void twoGroups_sameStratifier() {
-        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
         Measure.MeasureGroupComponent measureGroup_1 = getMeasureGroup()
                 .setStratifier(List.of(
                         new Measure.MeasureGroupStratifierComponent()

@@ -2,10 +2,8 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable.AggregateUniqueCounter;
-import org.hl7.fhir.r4.context.IWorkerContext;
-import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
@@ -15,12 +13,14 @@ import org.hl7.fhir.r4.model.Expression;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.Medication;
+import org.hl7.fhir.r4.model.MedicationAdministration;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Quantity;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StringType;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,7 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_INVALID_TYPE;
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.FAIL_MISSING_FIELDS;
@@ -40,6 +42,7 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.INITIAL_POPULATION_CODING;
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_OBSERVATION_CODING;
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_POPULATION_CODING;
+import static de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithIncludes.setResolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -80,13 +83,17 @@ class GroupEvaluatorTest {
 
     @Mock
     DataStore dataStore;
-    FHIRPathEngine pathEngine;
+    IFhirPath pathEngine;
     GroupEvaluator groupEvaluator;
 
 
     private static Expression expressionOfPath(String expStr) {
         Expression expression = new Expression();
         return expression.setExpression(expStr).setLanguage(FHIR_PATH);
+    }
+
+    public static List<ResourceWithIncludes> wrapWithoutIncludes(IFhirPath fhirPathEngine, Resource... resources) {
+        return Arrays.stream(resources).map(r -> new ResourceWithIncludes(r, Map.of(), fhirPathEngine)).toList();
     }
 
     public static Condition getCondition() {
@@ -108,11 +115,9 @@ class GroupEvaluatorTest {
         return new Observation().setValue(new Quantity().setCode(quantityCode));
     }
 
-    public static FHIRPathEngine createPathEngine() {
+    public static IFhirPath createPathEngine() {
         final FhirContext context = FhirContext.forR4();
-        final DefaultProfileValidationSupport validation = new DefaultProfileValidationSupport(context);
-        final IWorkerContext worker = new HapiWorkerContext(context, validation);
-        return new FHIRPathEngine(worker);
+        return context.newFhirPath();
     }
 
     public static Measure.MeasureGroupPopulationComponent getInitialPopulation(String query) {
@@ -212,7 +217,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_componentWithoutCoding() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of
                             (new Measure.MeasureGroupStratifierComponent()
@@ -227,7 +232,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_componentWithMultipleCodings() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent()
@@ -245,7 +250,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_componentWithWrongLanguage() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setComponent(List.of(
@@ -491,7 +496,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_oneResultValue_ignoreOtherPopulations() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH)
                                     .setCode(new CodeableConcept(COND_DEF_CODING))))
                             .setPopulation(List.of(
@@ -515,7 +520,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_oneResultValue() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
                                     new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -539,7 +544,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_twoSameResultValues() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                             getCondition(),
                             getCondition())));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -566,7 +571,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_twoDifferentResultValues() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                             getCondition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_1))),
                             getCondition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_2))))));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -598,7 +603,7 @@ class GroupEvaluatorTest {
                 class FailTests {
                     @Test
                     public void test_oneStratifierElement_noValue() {
-                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(new Condition())));
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, new Condition())));
                         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                                 .setStratifier(List.of(
                                         new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -624,7 +629,7 @@ class GroupEvaluatorTest {
                     @Test
                     public void test_oneStratifierElement_tooManyValues() {
                         Coding condCoding = new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE);
-                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(new Condition().setCode(new CodeableConcept()
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, new Condition().setCode(new CodeableConcept()
                                 .addCoding(condCoding)
                                 .addCoding(condCoding)))));
                         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -650,7 +655,7 @@ class GroupEvaluatorTest {
 
                     @Test
                     public void test_oneStratifierElement_invalidType() {
-                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
                         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                                 .setStratifier(List.of(
                                         new Measure.MeasureGroupStratifierComponent().setCriteria(expressionOfPath("Condition.code")).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -674,7 +679,8 @@ class GroupEvaluatorTest {
 
                     @Test
                     public void test_oneStratifierElement_missingSystem() {
-                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(new Condition().setCode(new CodeableConcept(new Coding().setCode(COND_VALUE_CODE))))));
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
+                                new Condition().setCode(new CodeableConcept(new Coding().setCode(COND_VALUE_CODE))))));
                         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                                 .setStratifier(List.of(
                                         new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -698,7 +704,8 @@ class GroupEvaluatorTest {
 
                     @Test
                     public void test_oneStratifierElement_missingCode() {
-                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(new Condition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM))))));
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
+                                new Condition().setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM))))));
                         Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                                 .setStratifier(List.of(
                                         new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -727,7 +734,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_twoSameStratifierElements() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
                                     new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH).setCode(new CodeableConcept(COND_DEF_CODING)),
@@ -760,7 +767,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_twoStratifierElements_oneResultValueEach() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition()
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition()
                             .setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
@@ -801,7 +808,7 @@ class GroupEvaluatorTest {
             class SingleStratifierInGroup {
                 @Test
                 public void test_oneStratifierElement_twoDifferentComponents_oneDifferentResultValueEach() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                             getCondition().setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))))));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
@@ -835,7 +842,7 @@ class GroupEvaluatorTest {
 
                 @Test
                 public void test_oneStratifierElement_twoDifferentComponents_oneSameResultValueEach() {
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
                     Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                             .setStratifier(List.of(
                                     new Measure.MeasureGroupStratifierComponent()
@@ -885,7 +892,7 @@ class GroupEvaluatorTest {
                             new HashableCoding(STATUS_DEF_SYSTEM, STATUS_DEF_CODE, SOME_DISPLAY),
                             new HashableCoding(STATUS_VALUE_SYSTEM, "status-value-2", SOME_DISPLAY));
 
-                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+                    when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                             getCondition().setCode(condCoding1).setClinicalStatus(statusCoding1),
                             getCondition().setCode(condCoding1).setClinicalStatus(statusCoding2),
                             getCondition().setCode(condCoding2).setClinicalStatus(statusCoding1),
@@ -990,7 +997,7 @@ class GroupEvaluatorTest {
 
             @Test
             public void test_quantityCode() {
-                when(dataStore.getResources("/" + OBSERVATION_QUERY)).thenReturn(Flux.fromIterable(List.of(getObservation(NG_ML))));
+                when(dataStore.getResources("/" + OBSERVATION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getObservation(NG_ML))));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                         .setStratifier(List.of(
                                 new Measure.MeasureGroupStratifierComponent().setCriteria(VALUE_PATH).setCode(new CodeableConcept(QUANTITY_DEF_CODING))))
@@ -1020,7 +1027,7 @@ class GroupEvaluatorTest {
         class Code_ofType_Enumeration {
             @Test
             public void test_gender() {
-                when(dataStore.getResources("/" + PATIENT_QUERY)).thenReturn(Flux.fromIterable(List.of(getPatient(GENDER))));
+                when(dataStore.getResources("/" + PATIENT_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getPatient(GENDER))));
                 Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                         .setStratifier(List.of(
                                 new Measure.MeasureGroupStratifierComponent().setCriteria(GENDER_PATH).setCode(new CodeableConcept(GENDER_DEF_CODING))))
@@ -1046,7 +1053,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_code_no_value() {
-            when(dataStore.getResources("/" + PATIENT_QUERY)).thenReturn(Flux.fromIterable(List.of(getPatient(null))));
+            when(dataStore.getResources("/" + PATIENT_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getPatient(null))));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(GENDER_PATH).setCode(new CodeableConcept(GENDER_DEF_CODING))))
@@ -1081,7 +1088,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_code_exists() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition())));
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition())));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_EXISTS_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -1105,7 +1112,7 @@ class GroupEvaluatorTest {
 
         @Test
         public void test_code_exists_not() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(getCondition().setCode(null))));
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, getCondition().setCode(null))));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_EXISTS_PATH).setCode(new CodeableConcept(COND_DEF_CODING))))
@@ -1128,6 +1135,79 @@ class GroupEvaluatorTest {
     }
 
     @Nested
+    @DisplayName("Test Reference Resolve")
+    class ReferenceResolve {
+
+        static final String MEDICATION_ADMINISTRATION_QUERY = "MedicationAdministration?_include=MedicationAdministration:medication";
+        static final Expression MEDICATION_RESOLVE_PATH = expressionOfPath("MedicationAdministration.medication.resolve().ofType(Medication).code.coding");
+        static final Coding MED_ADM_DEF_CODING = new Coding("system", "medication-coding-stratifier", "display");
+        static final HashableCoding MED_VALUE_CODING = new HashableCoding("system", "medication-code-121431", "display");
+        static final String MED_ID = "id-121549";
+
+        private MedicationAdministration getMedicationAdministration() {
+            return new MedicationAdministration().setMedication(new Reference().setReference("Medication/" + MED_ID));
+        }
+
+        private Medication getMedication() {
+            return (Medication) new Medication().setCode(new CodeableConcept(MED_VALUE_CODING.toCoding())).setId(MED_ID);
+        }
+
+        private ResourceWithIncludes getMedAdministrationWithMedication() {
+            IFhirPath fhirPathEngine = FhirContext.forR4().newFhirPath();
+            Map<String, Resource> includes = Map.of("Medication/" + MED_ID, getMedication());
+            setResolver(fhirPathEngine, includes);
+
+            return new ResourceWithIncludes(getMedicationAdministration(), includes, fhirPathEngine);
+        }
+
+        @Test
+        @DisplayName("Test one MedicationAdministration that references one Medication")
+        public void test_oneReference() {
+            when(dataStore.getResources("/" + MEDICATION_ADMINISTRATION_QUERY)).thenReturn(Flux.just(getMedAdministrationWithMedication()));
+            var parser = FhirContext.forR4().newJsonParser();
+            System.out.println(parser.encodeResourceToString(getMedication()));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(MEDICATION_RESOLVE_PATH).setCode(new CodeableConcept(MED_ADM_DEF_CODING))))
+                    .setPopulation(List.of(getInitialPopulation(MEDICATION_ADMINISTRATION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(MED_ADM_DEF_CODING));
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                    .isEqualTo(MED_VALUE_CODING);
+            assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                    .isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Test one MedicationAdministration that references a Medication that does not exist")
+        public void test_oneReference_withoutReferencedObject() {
+            when(dataStore.getResources("/" + MEDICATION_ADMINISTRATION_QUERY)).thenReturn(Flux.just(new ResourceWithIncludes(getMedication(), Map.of(), pathEngine)));
+            var parser = FhirContext.forR4().newJsonParser();
+            System.out.println(parser.encodeResourceToString(getMedication()));
+            Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
+                    .setStratifier(List.of(
+                            new Measure.MeasureGroupStratifierComponent().setCriteria(MEDICATION_RESOLVE_PATH).setCode(new CodeableConcept(MED_ADM_DEF_CODING))))
+                    .setPopulation(List.of(getInitialPopulation(MEDICATION_ADMINISTRATION_QUERY)));
+            GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+            var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+            assertThat(result).isNotNull();
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                    .isEqualTo(HashableCoding.ofFhirCoding(MED_ADM_DEF_CODING));
+            assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                    .isEqualTo(FAIL_NO_VALUE_FOUND);
+            assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                    .isEqualTo(1);
+        }
+    }
+
+    @Nested
     @DisplayName("Test Unique Count")
     class UniqueCount {
         static final String UNIQUE_VAL_1 = "val-1";
@@ -1137,7 +1217,7 @@ class GroupEvaluatorTest {
         @Test
         @DisplayName("Two same values resulting in unique count '1'")
         public void test_twoSameValues() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                     getConditionWithSubject(UNIQUE_VAL_1),
                     getConditionWithSubject(UNIQUE_VAL_1))));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -1173,7 +1253,7 @@ class GroupEvaluatorTest {
         @Test
         @DisplayName("Two different values resulting in unique count '2'")
         public void test_twoDifferentValues() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                     getConditionWithSubject(UNIQUE_VAL_1),
                     getConditionWithSubject(UNIQUE_VAL_2))));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
@@ -1209,7 +1289,7 @@ class GroupEvaluatorTest {
         @Test
         @DisplayName("Two same values part of Measure Population and one different value not part of Measure Population")
         public void test_twoSameValues_oneDifferentValue_withDifferentMeasurePopulation() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                     getConditionWithSubject(UNIQUE_VAL_1).setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))),
                     getConditionWithSubject(UNIQUE_VAL_1).setClinicalStatus(new CodeableConcept(new Coding(STATUS_VALUE_SYSTEM, STATUS_VALUE_CODE, SOME_DISPLAY))),
                     getConditionWithSubject(UNIQUE_VAL_2))));
@@ -1246,7 +1326,7 @@ class GroupEvaluatorTest {
         @Test
         @DisplayName("Two Conditions with same value and one Condition with no value, leading to a different Measure Observation Population count")
         public void test_twoSameValues_withDifferentObservationPopulation() {
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                     getConditionWithSubject(UNIQUE_VAL_1),
                     getConditionWithSubject(UNIQUE_VAL_1),
                     getCondition())));
@@ -1284,7 +1364,7 @@ class GroupEvaluatorTest {
                 "and group as a whole has also unique-count '1'")
         public void test_twoDifferentStratumValues_withSameUniqueValue() {
 
-            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(List.of(
+            when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine,
                     getConditionWithSubject(UNIQUE_VAL_1)
                             .setCode(new CodeableConcept(new Coding().setSystem(COND_VALUE_SYSTEM).setCode(COND_VALUE_CODE_1))),
                     getConditionWithSubject(UNIQUE_VAL_1)

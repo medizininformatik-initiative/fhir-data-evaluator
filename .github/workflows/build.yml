@@ -149,6 +149,9 @@ jobs:
       - name: Run Integration Test for Unique Count with Components and with CSV
         run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh ${{ matrix.test }}
 
+      - name: Run Integration Test for Reference Resolve
+        run: .github/integration-test/evaluate-reference-resolve.sh ${{ matrix.test }}
+
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 

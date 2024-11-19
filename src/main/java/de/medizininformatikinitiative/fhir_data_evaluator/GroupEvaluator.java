@@ -1,5 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasurePopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialPopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialAndMeasureAndObsIndividual;
@@ -7,11 +8,8 @@ import de.medizininformatikinitiative.fhir_data_evaluator.populations.individual
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialIndividual;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable.AggregateUniqueCounter;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable.InitialAndMeasureAndObsPopulation;
-import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
-import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -30,9 +28,9 @@ public class GroupEvaluator {
     final String CRITERIA_REFERENCE_URL = "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference";
 
     private final DataStore dataStore;
-    private final FHIRPathEngine fhirPathEngine;
+    private final IFhirPath fhirPathEngine;
 
-    public GroupEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine) {
+    public GroupEvaluator(DataStore dataStore, IFhirPath fhirPathEngine) {
         this.dataStore = requireNonNull(dataStore);
         this.fhirPathEngine = requireNonNull(fhirPathEngine);
     }
@@ -64,7 +62,7 @@ public class GroupEvaluator {
         return evaluateGroupOfInitialAndMeasureAndObs(population, group, measurePopulationExpression.get(), observationPopulationExpression.get());
     }
 
-    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitial(Flux<Resource> population, Measure.MeasureGroupComponent group) {
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitial(Flux<ResourceWithIncludes> population, Measure.MeasureGroupComponent group) {
         var groupReduceOp = new GroupReduceOpInitial(group.getStratifier().stream().map(s ->
                 new StratifierReduceOp<InitialPopulation, InitialIndividual>(getComponentExpressions(s))).toList());
 
@@ -74,12 +72,12 @@ public class GroupEvaluator {
                 .map(GroupResult::toReportGroup);
     }
 
-    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasure(Flux<Resource> population,
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasure(Flux<ResourceWithIncludes> population,
                                                                                              Measure.MeasureGroupComponent group,
-                                                                                             ExpressionNode measurePopulationExpression) {
+                                                                                             IFhirPath.IParsedExpression measurePopulationExpression) {
         var groupReduceOp = new GroupReduceOpMeasure(group.getStratifier().stream().map(s ->
                 new StratifierReduceOp<InitialAndMeasurePopulation, InitialAndMeasureIndividual>(getComponentExpressions(s))).toList(),
-                measurePopulationExpression, fhirPathEngine);
+                measurePopulationExpression);
 
         List<StratifierResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>> initialStratifierResults = group.getStratifier().stream().map(s ->
                 StratifierResult.initial(s, InitialAndMeasurePopulation.class)).toList();
@@ -87,13 +85,13 @@ public class GroupEvaluator {
                 .map(GroupResult::toReportGroup);
     }
 
-    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasureAndObs(Flux<Resource> population,
+    private Mono<MeasureReport.MeasureReportGroupComponent> evaluateGroupOfInitialAndMeasureAndObs(Flux<ResourceWithIncludes> population,
                                                                                                    Measure.MeasureGroupComponent group,
-                                                                                                   ExpressionNode measurePopulationExpression,
-                                                                                                   ExpressionNode observationPopulationExpression) {
+                                                                                                   IFhirPath.IParsedExpression measurePopulationExpression,
+                                                                                                   IFhirPath.IParsedExpression observationPopulationExpression) {
         var groupReduceOp = new GroupReduceOpObservation(group.getStratifier().stream().map(s ->
                 new StratifierReduceOp<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual>(getComponentExpressions(s))).toList(),
-                measurePopulationExpression, observationPopulationExpression, fhirPathEngine);
+                measurePopulationExpression, observationPopulationExpression);
 
         List<StratifierResult<InitialAndMeasureAndObsPopulation, InitialAndMeasureAndObsIndividual>> initialStratifierResults = group.getStratifier().stream().map(s ->
                 StratifierResult.initial(s, InitialAndMeasureAndObsPopulation.class)).toList();
@@ -117,7 +115,7 @@ public class GroupEvaluator {
         return foundInitialPopulation;
     }
 
-    private Optional<ExpressionNode> findMeasurePopulationExpression(Measure.MeasureGroupComponent group) {
+    private Optional<IFhirPath.IParsedExpression> findMeasurePopulationExpression(Measure.MeasureGroupComponent group) {
         var foundMeasurePopulations = findPopulationsByCode(group, MEASURE_POPULATION_CODING);
         if (foundMeasurePopulations.isEmpty()) {
             return Optional.empty();
@@ -132,10 +130,14 @@ public class GroupEvaluator {
             throw new IllegalArgumentException("Language of Measure Population was not equal to '%s'".formatted(FHIR_PATH));
         }
 
-        return Optional.of(fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression()));
+        try {
+            return Optional.of(fhirPathEngine.parse(foundMeasurePopulation.getCriteria().getExpression()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private Optional<ExpressionNode> findObservationPopulationExpression(Measure.MeasureGroupComponent group) {
+    private Optional<IFhirPath.IParsedExpression> findObservationPopulationExpression(Measure.MeasureGroupComponent group) {
         var foundObservationPopulations = findPopulationsByCode(group, MEASURE_OBSERVATION_CODING);
 
         if (foundObservationPopulations.isEmpty()) {
@@ -173,7 +175,11 @@ public class GroupEvaluator {
             throw new IllegalArgumentException("Aggregate Method of Measure Observation Population has not value '%s'".formatted(AggregateUniqueCounter.EXTENSION_VALUE));
         }
 
-        return Optional.of(fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()));
+        try {
+            return Optional.of(fhirPathEngine.parse(foundObservationPopulation.getCriteria().getExpression()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<Measure.MeasureGroupPopulationComponent> findPopulationsByCode(Measure.MeasureGroupComponent group, HashableCoding code) {
@@ -201,12 +207,15 @@ public class GroupEvaluator {
     }
 
     private List<ComponentExpression> getComponentExpressionsFromCriteria(Measure.MeasureGroupStratifierComponent fhirStratifier) {
-        return List.of(ComponentExpression.fromCriteria(fhirPathEngine, fhirStratifier));
+        try {
+            return List.of(ComponentExpression.fromCriteria(fhirPathEngine, fhirStratifier));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<ComponentExpression> getComponentExpressionsFromComponents(Measure.MeasureGroupStratifierComponent fhirStratifier) {
         return fhirStratifier.getComponent().stream()
-                .map(component -> ComponentExpression.fromComponent(fhirPathEngine, component))
-                .toList();
+                .map(component -> ComponentExpression.fromComponent(fhirPathEngine, component)).toList();
     }
 }

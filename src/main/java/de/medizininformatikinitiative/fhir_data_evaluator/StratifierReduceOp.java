@@ -3,7 +3,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
 import org.apache.commons.lang3.function.TriFunction;
-import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
 import java.util.Set;
@@ -19,18 +18,18 @@ import java.util.stream.Collectors;
  */
 public record StratifierReduceOp<T extends Population<T, I>, I extends Individual<T>>(
         List<ComponentExpression> componentExpressions)
-        implements TriFunction<StratifierResult<T, I>, Resource, I, StratifierResult<T, I>> {
+        implements TriFunction<StratifierResult<T, I>, ResourceWithIncludes, I, StratifierResult<T, I>> {
 
     public StratifierReduceOp {
         componentExpressions = List.copyOf(componentExpressions);
     }
 
     @Override
-    public StratifierResult<T, I> apply(StratifierResult<T, I> s, Resource resource, I incrementIndividual) {
+    public StratifierResult<T, I> apply(StratifierResult<T, I> s, ResourceWithIncludes resource, I incrementIndividual) {
         return s.mergeStratumComponents(evaluateStratifier(resource), incrementIndividual);
     }
 
-    private Set<StratumComponent> evaluateStratifier(Resource resource) {
+    private Set<StratumComponent> evaluateStratifier(ResourceWithIncludes resource) {
         return componentExpressions.stream().map(e -> e.evaluate(resource)).collect(Collectors.toSet());
     }
 }
