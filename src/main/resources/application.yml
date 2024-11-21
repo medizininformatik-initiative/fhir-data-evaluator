@@ -1,18 +1,31 @@
 fhir:
-  server: ${FHIR_SERVER:http://localhost:8080/fhir}
-  user: ${FHIR_USER:}
-  password: ${FHIR_PASSWORD:}
-  maxConnections: ${FHIR_MAX_CONNECTIONS:4}
-  maxQueueSize: ${FHIR_MAX_QUEUE_SIZE:500}
-  pageCount: ${FHIR_PAGE_COUNT:1000}
-  bearerToken: ${FHIR_BEARER_TOKEN:}
-  oauth:
-    issuer:
-      uri: ${FHIR_OAUTH_ISSUER_URI:}
-    client:
-      id: ${FHIR_OAUTH_CLIENT_ID:}
-      secret: ${FHIR_OAUTH_CLIENT_SECRET:}
-  reportDestinationServer: ${FHIR_REPORT_DESTINATION_SERVER:http://localhost:8080/fhir}
+  source:
+    server: ${FHIR_SOURCE_SERVER:http://localhost:8080/fhir}
+    user: ${FHIR_SOURCE_USER:}
+    password: ${FHIR_SOURCE_PASSWORD:}
+    maxConnections: ${FHIR_SOURCE_MAX_CONNECTIONS:4}
+    maxQueueSize: ${FHIR_SOURCE_MAX_QUEUE_SIZE:500}
+    pageCount: ${FHIR_SOURCE_PAGE_COUNT:1000}
+    bearerToken: ${FHIR_SOURCE_BEARER_TOKEN:}
+    oauth:
+      issuer:
+        uri: ${FHIR_SOURCE_OAUTH_ISSUER_URI:}
+      client:
+        id: ${FHIR_SOURCE_OAUTH_CLIENT_ID:}
+        secret: ${FHIR_SOURCE_OAUTH_CLIENT_SECRET:}
+  report:
+    server: ${FHIR_REPORT_SERVER:http://localhost:8080/fhir}
+    user: ${FHIR_REPORT_USER:}
+    password: ${FHIR_REPORT_PASSWORD:}
+    maxConnections: ${FHIR_REPORT_MAX_CONNECTIONS:4}
+    maxQueueSize: ${FHIR_REPORT_MAX_QUEUE_SIZE:500}
+    bearerToken: ${FHIR_REPORT_BEARER_TOKEN:}
+    oauth:
+      issuer:
+        uri: ${FHIR_REPORT_OAUTH_ISSUER_URI:}
+      client:
+        id: ${FHIR_REPORT_OAUTH_CLIENT_ID:}
+        secret: ${FHIR_REPORT_OAUTH_CLIENT_SECRET:}
 maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}

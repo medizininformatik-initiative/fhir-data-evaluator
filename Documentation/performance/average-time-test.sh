@@ -11,7 +11,7 @@ mkdir -p "$OUTPUT_DIR"
 
 for ((i=0;i<ITERATIONS;i++))
 do
-  docker run -v "/$MEASURE_FILE":/app/measure.json -v "/$OUTPUT_DIR":/app/output/ -e FHIR_SERVER=http://host.docker.internal:8080/fhir -e FHIR_PAGE_COUNT=500 -it "$DOCKER_IMAGE"
+  docker run -v "/$MEASURE_FILE":/app/measure.json -v "/$OUTPUT_DIR":/app/output/ -e FHIR_SOURCE_SERVER=http://host.docker.internal:8080/fhir -e FHIR_SOURCE_PAGE_COUNT=500 -it "$DOCKER_IMAGE"
 done
 
 result=$(\

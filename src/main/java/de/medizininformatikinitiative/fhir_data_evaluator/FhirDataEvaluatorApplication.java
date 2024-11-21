@@ -72,47 +72,64 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public MeasureEvaluator measureEvaluator(DataStore dataStore, IFhirPath fhirPathEngine) {
-        return new MeasureEvaluator(dataStore, fhirPathEngine);
+    public DataStore sourceDataStore(WebClient sourceClient, IParser parser, @Value("${fhir.source.pageCount}") int sourcePageCount,
+                                     FhirContext context, IFhirPath fhirPathEngine) {
+        return new DataStore(sourceClient, parser, sourcePageCount, context, fhirPathEngine);
     }
 
     @Bean
-    public WebClient webClient(@Value("${fhir.server}") String fhirServer,
-                               @Value("${fhir.user}") String user,
-                               @Value("${fhir.password}") String password,
-                               @Value("${fhir.maxConnections}") int maxConnections,
-                               @Value("${fhir.maxQueueSize}") int maxQueueSize,
-                               @Value("${fhir.bearerToken}") String bearerToken,
+    public DataStore reportDataStore(WebClient reportClient, IParser parser, FhirContext context, IFhirPath fhirPathEngine) {
+        return new DataStore(reportClient, parser, 100, context, fhirPathEngine);
+    }
+
+    @Bean
+    public MeasureEvaluator measureEvaluator(DataStore sourceDataStore, IFhirPath fhirPathEngine) {
+        return new MeasureEvaluator(sourceDataStore, fhirPathEngine);
+    }
+
+    @Bean
+    public WebClient sourceClient(@Value("${fhir.source.server}") String fhirServer,
+                               @Value("${fhir.source.user}") String user,
+                               @Value("${fhir.source.password}") String password,
+                               @Value("${fhir.source.maxConnections}") int maxConnections,
+                               @Value("${fhir.source.maxQueueSize}") int maxQueueSize,
+                               @Value("${fhir.source.bearerToken}") String bearerToken,
                                @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
-                               @Qualifier("oauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
-        ConnectionProvider provider = ConnectionProvider.builder("data-store")
-                .maxConnections(maxConnections)
-                .pendingAcquireMaxCount(maxQueueSize)
-                .build();
-        HttpClient httpClient = HttpClient.create(provider);
-        WebClient.Builder builder = WebClient.builder()
-                .baseUrl(fhirServer)
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("Accept", "application/fhir+json")
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeMib * 1024 * 1024));
-        if (!bearerToken.isEmpty()) {
-            builder = builder.filter((request, next) -> {
-                ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
-                return next.exchange(newReq);
-            });
-        }
-        if (!user.isEmpty() && !password.isEmpty()) {
-            builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
-        }
-        return builder.filter(oauthExchangeFilterFunction).build();
+                               @Qualifier("sourceOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
+        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
     }
 
     @Bean
-    @Qualifier("oauth")
-    ExchangeFilterFunction oauthExchangeFilterFunction(
-            @Value("${fhir.oauth.issuer.uri}") String issuerUri,
-            @Value("${fhir.oauth.client.id}") String clientId,
-            @Value("${fhir.oauth.client.secret}") String clientSecret) {
+    @Qualifier("sourceOauth")
+    ExchangeFilterFunction sourceOauthExchangeFilterFunction(
+            @Value("${fhir.source.oauth.issuer.uri}") String issuerUri,
+            @Value("${fhir.source.oauth.client.id}") String clientId,
+            @Value("${fhir.source.oauth.client.secret}") String clientSecret) {
+        return getExchangeFilterFunction(issuerUri, clientId, clientSecret);
+    }
+
+    @Bean
+    public WebClient reportClient(@Value("${fhir.report.server}") String fhirServer,
+                                  @Value("${fhir.report.user}") String user,
+                                  @Value("${fhir.report.password}") String password,
+                                  @Value("${fhir.report.maxConnections}") int maxConnections,
+                                  @Value("${fhir.report.maxQueueSize}") int maxQueueSize,
+                                  @Value("${fhir.report.bearerToken}") String bearerToken,
+                                  @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
+                                  @Qualifier("reportOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
+        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
+    }
+
+    @Bean
+    @Qualifier("reportOauth")
+    ExchangeFilterFunction reportOauthExchangeFilterFunction(
+            @Value("${fhir.report.oauth.issuer.uri}") String issuerUri,
+            @Value("${fhir.report.oauth.client.id}") String clientId,
+            @Value("${fhir.report.oauth.client.secret}") String clientSecret) {
+        return getExchangeFilterFunction(issuerUri, clientId, clientSecret);
+    }
+
+    private ExchangeFilterFunction getExchangeFilterFunction(String issuerUri, String clientId, String clientSecret) {
         if (!issuerUri.isEmpty() && !clientId.isEmpty() && !clientSecret.isEmpty()) {
             logger().debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
                     issuerUri, clientId);
@@ -137,6 +154,30 @@ public class FhirDataEvaluatorApplication {
         }
     }
 
+    private WebClient getWebClient(String fhirServer, String user, String password, int maxConnections, int maxQueueSize,
+                                   String bearerToken, int maxInMemorySizeMib, ExchangeFilterFunction oauthExchangeFilterFunction) {
+        ConnectionProvider provider = ConnectionProvider.builder("data-store")
+                .maxConnections(maxConnections)
+                .pendingAcquireMaxCount(maxQueueSize)
+                .build();
+        HttpClient httpClient = HttpClient.create(provider);
+        WebClient.Builder builder = WebClient.builder()
+                .baseUrl(fhirServer)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .defaultHeader("Accept", "application/fhir+json")
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeMib * 1024 * 1024));
+        if (!bearerToken.isEmpty()) {
+            builder = builder.filter((request, next) -> {
+                ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
+                return next.exchange(newReq);
+            });
+        }
+        if (!user.isEmpty() && !password.isEmpty()) {
+            builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
+        }
+        return builder.filter(oauthExchangeFilterFunction).build();
+    }
+
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(FhirDataEvaluatorApplication.class);
         app.setWebApplicationType(WebApplicationType.NONE);
@@ -149,7 +190,7 @@ public class FhirDataEvaluatorApplication {
 class EvaluationExecutor implements CommandLineRunner {
 
     private final static double NANOS_IN_SECOND = 1_000_000_000.0;
-    private final DataStore dataStore;
+    private final DataStore reportDataStore;
     private final Logger logger = LoggerFactory.getLogger(EvaluationExecutor.class);
 
     @Value("${measureFile}")
@@ -166,8 +207,8 @@ class EvaluationExecutor implements CommandLineRunner {
     private String projectIdentifierSystem;
     @Value("${projectIdentifierValue}")
     private String projectIdentifierValue;
-    @Value("${fhir.reportDestinationServer}")
-    private String reportDestinationServer;
+    @Value("${fhir.report.server}")
+    private String reportServer;
     private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
 
     private final MeasureEvaluator measureEvaluator;
@@ -177,10 +218,10 @@ class EvaluationExecutor implements CommandLineRunner {
             .setSystem("http://unitsofmeasure.org")
             .setUnit("u");
 
-    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser, DataStore dataStore) {
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser, DataStore reportDataStore) {
         this.measureEvaluator = measureEvaluator;
         this.parser = parser;
-        this.dataStore = dataStore;
+        this.reportDataStore = reportDataStore;
     }
 
     private String getMeasureFile() {
@@ -215,7 +256,7 @@ class EvaluationExecutor implements CommandLineRunner {
     }
 
     private String getDocRefId() {
-        var documentReferences = dataStore.getResources(reportDestinationServer + "/DocumentReference")
+        var documentReferences = reportDataStore.getResources(reportServer + "/DocumentReference")
                 .map(r -> (DocumentReference)r.mainResource()).collectList().block();
 
         var refsWithSameProjId = documentReferences.stream().filter(r ->
@@ -281,10 +322,10 @@ class EvaluationExecutor implements CommandLineRunner {
         String parsedReport = parser.encodeResourceToString(measureReport);
 
         if(sendReportToServer) {
-            logger.info("Uploading MeasureReport to FHIR server at {}", reportDestinationServer);
+            logger.info("Uploading MeasureReport to FHIR Report server at {}", reportServer);
             try {
-                dataStore.postReport(createTransactionBundle(dateForBundle, parsedReport))
-                        .doOnSuccess(v -> logger.info("Successfully uploaded MeasureReport to FHIR server"))
+                reportDataStore.postReport(createTransactionBundle(dateForBundle, parsedReport))
+                        .doOnSuccess(v -> logger.info("Successfully uploaded MeasureReport to FHIR Report server"))
                         .block();
             } catch (RuntimeException e) {
                 logger.error(e.getMessage());
