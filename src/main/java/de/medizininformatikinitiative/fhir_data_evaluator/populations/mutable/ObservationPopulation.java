@@ -1,6 +1,13 @@
 package de.medizininformatikinitiative.fhir_data_evaluator.populations.mutable;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
+import de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithIncludes;
+import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.MeasureReport;
+import org.hl7.fhir.r4.model.StringType;
+
+import java.util.List;
+import java.util.Optional;
 
 import static de.medizininformatikinitiative.fhir_data_evaluator.HashableCoding.MEASURE_OBSERVATION_CODING;
 import static java.util.Objects.requireNonNull;
@@ -34,6 +41,21 @@ public record ObservationPopulation(int count, AggregateUniqueCounter aggregateM
      */
     public ObservationPopulation increment(String value) {
         return new ObservationPopulation(count + 1, aggregateMethod.addValue(requireNonNull(value)));
+    }
+
+    public static Optional<String> evaluateObservationPop(ResourceWithIncludes resource, IFhirPath.IParsedExpression expression) {
+        List<Base> found = resource.fhirPathEngine().evaluate(resource.mainResource(), expression, Base.class);
+
+        if (found.isEmpty())
+            return Optional.empty();
+
+        if (found.size() > 1)
+            throw new IllegalArgumentException("Measure observation population evaluated into more than one entity");
+
+        if (found.get(0) instanceof StringType s)
+            return Optional.of(s.getValue());
+
+        throw new IllegalArgumentException("Measure observation population evaluated into different type than 'String'");
     }
 
     public MeasureReport.MeasureReportGroupPopulationComponent toReportGroupPopulation() {

@@ -1,5 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import org.hl7.fhir.r4.model.Base;
 import org.hl7.fhir.r4.model.BooleanType;
 import org.hl7.fhir.r4.model.CodeType;
@@ -7,8 +8,6 @@ import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Enumeration;
 import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Measure;
-import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 
@@ -17,32 +16,29 @@ import static java.util.Objects.requireNonNull;
 /**
  * Holds a {@link HashableCoding} and a pre-parsed FHIRPath {@link ExpressionNode} of a single stratifier component.
  *
- * @param fhirPathEngine the engine used to evaluate the expression
  * @param code           the component code
  * @param expression     the expression to extract the stratum value
  */
-public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding code, ExpressionNode expression) {
+public record ComponentExpression(HashableCoding code, IFhirPath.IParsedExpression expression) {
 
     private static final String STRATIFIER_LANGUAGE = "text/fhirpath";
 
     public ComponentExpression {
-        requireNonNull(fhirPathEngine);
         requireNonNull(code);
         requireNonNull(expression);
     }
 
-    public static ComponentExpression fromCriteria(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) {
+    public static ComponentExpression fromCriteria(IFhirPath fhirPathEngine, Measure.MeasureGroupStratifierComponent fhirStratifier) throws Exception {
         if (!fhirStratifier.getCriteria().getLanguage().equals(STRATIFIER_LANGUAGE)) {
             throw new IllegalArgumentException("Language of Stratifier was not equal to '%s'".formatted(STRATIFIER_LANGUAGE));
         }
 
         return new ComponentExpression(
-                fhirPathEngine,
                 HashableCoding.ofFhirCoding(fhirStratifier.getCode().getCodingFirstRep()),
                 fhirPathEngine.parse(fhirStratifier.getCriteria().getExpression()));
     }
 
-    public static ComponentExpression fromComponent(FHIRPathEngine fhirPathEngine, Measure.MeasureGroupStratifierComponentComponent component) {
+    public static ComponentExpression fromComponent(IFhirPath fhirPathEngine, Measure.MeasureGroupStratifierComponentComponent component) {
         if (component.getCode().getCoding().size() != 1) {
             throw new IllegalArgumentException("Stratifier component did not contain exactly one coding");
         }
@@ -51,14 +47,17 @@ public record ComponentExpression(FHIRPathEngine fhirPathEngine, HashableCoding 
             throw new IllegalArgumentException("Language of stratifier component was not equal to '%s'".formatted(STRATIFIER_LANGUAGE));
         }
 
-        return new ComponentExpression(
-                fhirPathEngine,
-                HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
-                fhirPathEngine.parse(component.getCriteria().getExpression()));
+        try {
+            return new ComponentExpression(
+                    HashableCoding.ofFhirCoding(component.getCode().getCodingFirstRep()),
+                    fhirPathEngine.parse(component.getCriteria().getExpression()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public StratumComponent evaluate(Resource resource) {
-        List<Base> found = fhirPathEngine.evaluate(resource, expression);
+    public StratumComponent evaluate(ResourceWithIncludes resource) {
+        List<Base> found = resource.fhirPathEngine().evaluate(resource.mainResource(), expression, Base.class);
 
         if (found.isEmpty()) {
             return StratumComponent.ofFailedNoValueFound(code);

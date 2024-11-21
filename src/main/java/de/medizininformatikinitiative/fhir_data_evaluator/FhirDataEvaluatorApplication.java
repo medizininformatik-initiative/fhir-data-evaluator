@@ -1,16 +1,13 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import ca.uhn.fhir.parser.IParser;
-import org.hl7.fhir.r4.context.IWorkerContext;
-import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
 import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Quantity;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,15 +65,14 @@ public class FhirDataEvaluatorApplication {
         return context.newJsonParser();
     }
 
+
     @Bean
-    public FHIRPathEngine fhirPathEngine(FhirContext context) {
-        final DefaultProfileValidationSupport validation = new DefaultProfileValidationSupport(context);
-        final IWorkerContext worker = new HapiWorkerContext(context, validation);
-        return new FHIRPathEngine(worker);
+    public IFhirPath fhirPathEngine(FhirContext context) {
+        return context.newFhirPath();
     }
 
     @Bean
-    public MeasureEvaluator measureEvaluator(DataStore dataStore, FHIRPathEngine fhirPathEngine) {
+    public MeasureEvaluator measureEvaluator(DataStore dataStore, IFhirPath fhirPathEngine) {
         return new MeasureEvaluator(dataStore, fhirPathEngine);
     }
 
@@ -220,7 +216,7 @@ class EvaluationExecutor implements CommandLineRunner {
 
     private String getDocRefId() {
         var documentReferences = dataStore.getResources(reportDestinationServer + "/DocumentReference")
-                .map(r -> (DocumentReference)r).collectList().block();
+                .map(r -> (DocumentReference)r.mainResource()).collectList().block();
 
         var refsWithSameProjId = documentReferences.stream().filter(r ->
                         r.getMasterIdentifier().getSystem().equals(projectIdentifierSystem) &&

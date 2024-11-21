@@ -1,9 +1,9 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.DocumentReference;
-import org.hl7.fhir.r4.model.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -19,6 +19,8 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
+import static de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithIncludes.processBundleIncludes;
+
 @Component
 public class DataStore {
 
@@ -26,13 +28,19 @@ public class DataStore {
     private final IParser parser;
     private final int pageCount;
     private final URI reportDestinationServer;
+    private final FhirContext context;
+    private final IFhirPath applicationFhirPathEngine;
 
     public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount,
-                     @Value("${fhir.reportDestinationServer}") URI reportDestinationServer) {
+                     @Value("${fhir.reportDestinationServer}") URI reportDestinationServer,
+                     FhirContext context,
+                     IFhirPath fhirPathEngine) {
         this.client = client;
         this.parser = parser;
         this.pageCount = pageCount;
         this.reportDestinationServer = reportDestinationServer;
+        this.context = context;
+        this.applicationFhirPathEngine = fhirPathEngine;
     }
 
     /**
@@ -41,7 +49,7 @@ public class DataStore {
      * @param query the fhir search query
      * @return the resources found with the {@code query}
      */
-    public Flux<Resource> getResources(String query) {
+    public Flux<ResourceWithIncludes> getResources(String query) {
         return client.get()
                 .uri(appendPageCount(query))
                 .retrieve()
@@ -53,7 +61,7 @@ public class DataStore {
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(e -> e instanceof WebClientResponseException &&
                                 shouldRetry(((WebClientResponseException) e).getStatusCode())))
-                .flatMap(bundle -> Flux.fromStream(bundle.getEntry().stream().map(Bundle.BundleEntryComponent::getResource)));
+                .flatMap(bundle -> Flux.fromStream(processBundleIncludes(bundle, applicationFhirPathEngine, context)));
     }
 
     /**

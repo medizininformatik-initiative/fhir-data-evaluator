@@ -56,6 +56,16 @@ with the Measure's name
 docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e CONVERT_TO_CSV=true -e FHIR_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin --network <your_network> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.1.0
 ```
 
+### Resolving References
+In case the FHIR Path of a stratifier evaluates a reference, the referenced resources must be included in the initial population
+as 'include' resources.
+
+Example:
+* FHIR Path of the stratifier: `MedicationAdministration.medication.resolve().ofType(Medication).code.coding`
+* FHIR Search query of the initial population: `MedicationAdministration?_include=MedicationAdministration:medication`
+
+If a reference cannot be resolved, the stratifier is counted as a value that was not found.
+
 ### Time Zones
 When generating the MeasureReport, the output files will be saved in a directory named after the current date
 combined with the Measure's name. Since it is run inside a Docker container, the time zone might differ from the one on

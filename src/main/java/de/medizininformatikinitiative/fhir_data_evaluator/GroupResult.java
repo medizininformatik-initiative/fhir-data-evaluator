@@ -3,7 +3,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.Population;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.Individual;
 import org.hl7.fhir.r4.model.MeasureReport;
-import org.hl7.fhir.r4.model.Resource;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -29,7 +28,7 @@ public record GroupResult<T extends Population<T, I>, I extends Individual<T>>(T
         return new GroupResult<T, I>(populations, initialResults);
     }
 
-    public GroupResult<T, I> applyResource(List<StratifierReduceOp<T, I>> stratifierOperations, Resource resource, I incrementIndividual) {
+    public GroupResult<T, I> applyResource(List<StratifierReduceOp<T, I>> stratifierOperations, ResourceWithIncludes resource, I incrementIndividual) {
         assert stratifierResults.size() == stratifierOperations.size();
         var newPopulation = populations.increment(incrementIndividual);
 
@@ -41,7 +40,7 @@ public record GroupResult<T extends Population<T, I>, I extends Individual<T>>(T
      * at index {@code i}.
      */
     private List<StratifierResult<T, I>> applyEachStratifier(List<StratifierReduceOp<T, I>> stratifierOperations,
-                                                             Resource resource,
+                                                             ResourceWithIncludes resource,
                                                              I incrementIndividual) {
         return IntStream.range(0, stratifierOperations.size()).mapToObj(i ->
                 stratifierOperations.get(i).apply(stratifierResults.get(i), resource, incrementIndividual)).toList();
