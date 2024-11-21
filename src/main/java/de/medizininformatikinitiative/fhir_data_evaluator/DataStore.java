@@ -24,21 +24,21 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithInc
 @Component
 public class DataStore {
 
-    private final WebClient client;
+    private final WebClient sourceClient;
+    private final WebClient destinationClient;
     private final IParser parser;
-    private final int pageCount;
-    private final URI reportDestinationServer;
+    private final int sourcePageCount;
     private final FhirContext context;
     private final IFhirPath applicationFhirPathEngine;
 
-    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount,
-                     @Value("${fhir.reportDestinationServer}") URI reportDestinationServer,
+    public DataStore(WebClient sourceClient, WebClient destinationClient, IParser parser,
+                     @Value("${fhir.source.pageCount}") int sourcePageCount,
                      FhirContext context,
                      IFhirPath fhirPathEngine) {
-        this.client = client;
+        this.sourceClient = sourceClient;
+        this.destinationClient = destinationClient;
         this.parser = parser;
-        this.pageCount = pageCount;
-        this.reportDestinationServer = reportDestinationServer;
+        this.sourcePageCount = sourcePageCount;
         this.context = context;
         this.applicationFhirPathEngine = fhirPathEngine;
     }
@@ -50,13 +50,13 @@ public class DataStore {
      * @return the resources found with the {@code query}
      */
     public Flux<ResourceWithIncludes> getResources(String query) {
-        return client.get()
+        return sourceClient.get()
                 .uri(appendPageCount(query))
                 .retrieve()
                 .bodyToFlux(String.class)
                 .map(response -> parser.parseResource(Bundle.class, response))
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
-                        .map(link -> fetchPage(client, link.getUrl()))
+                        .map(link -> fetchPage(sourceClient, link.getUrl()))
                         .orElse(Mono.empty()))
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(e -> e instanceof WebClientResponseException &&
@@ -72,8 +72,7 @@ public class DataStore {
      *                  failure
      */
     public Mono<Void> postReport(String bundle) {
-        return client.post()
-                .uri(reportDestinationServer)
+        return destinationClient.post()
                 .contentType(MediaType.valueOf("application/fhir+json"))
                 .bodyValue(bundle)
                 .retrieve()
@@ -100,7 +99,7 @@ public class DataStore {
     }
 
     String appendPageCount(String query) {
-        return query.contains("?") ? query + "&_count=" + this.pageCount : query + "?_count=" + this.pageCount;
+        return query.contains("?") ? query + "&_count=" + this.sourcePageCount : query + "?_count=" + this.sourcePageCount;
     }
 
 }

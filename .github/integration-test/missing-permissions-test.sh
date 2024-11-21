@@ -6,7 +6,7 @@ mkdir "$BASE_OUTPUT_DIR"
 # Allow docker to exit with an error
 set +e
 OUTPUT=$(docker run -v "$PWD"/.github/integration-test/measures/code-measure.json:/app/measure.json \
-      -v "$BASE_OUTPUT_DIR":/app/output:ro -e FHIR_SERVER=http://fhir-server:8080/fhir fhir-data-evaluator 2>&1)
+      -v "$BASE_OUTPUT_DIR":/app/output:ro -e FHIR_SOURCE_SERVER=http://fhir-server:8080/fhir fhir-data-evaluator 2>&1)
 EXIT_CODE=$?
 set -e
 
