@@ -77,7 +77,7 @@ class MeasureEvaluatorIntegrationTest {
     @TestConfiguration
     static class Config {
         @Bean
-        WebClient webClient() {
+        WebClient sourceClient() {
             var host = "%s:%d".formatted(blaze.getHost(), blaze.getFirstMappedPort());
             WebClient.Builder builder = WebClient.builder()
                     .baseUrl("http://%s/fhir".formatted(host))
@@ -92,7 +92,7 @@ class MeasureEvaluatorIntegrationTest {
     @Autowired
     private MeasureEvaluator measureEvaluator;
     @Autowired
-    private WebClient webClient;
+    private WebClient sourceClient;
     @Autowired
     private IParser parser;
 
@@ -111,7 +111,7 @@ class MeasureEvaluatorIntegrationTest {
     @BeforeEach
     void setUp() throws IOException {
         if (!dataImported) {
-            webClient.post()
+            sourceClient.post()
                     .contentType(APPLICATION_JSON)
                     .bodyValue(Files.readString(Path.of("src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Bundle.json")))
                     .retrieve()
@@ -124,7 +124,7 @@ class MeasureEvaluatorIntegrationTest {
 
     @BeforeAll
     static void init() {
-        System.setProperty("fhir.pageCount", "10");
+        System.setProperty("fhir.source.pageCount", "10");
     }
 
     @Test

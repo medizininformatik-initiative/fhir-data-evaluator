@@ -77,42 +77,48 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public WebClient webClient(@Value("${fhir.server}") String fhirServer,
-                               @Value("${fhir.user}") String user,
-                               @Value("${fhir.password}") String password,
-                               @Value("${fhir.maxConnections}") int maxConnections,
-                               @Value("${fhir.maxQueueSize}") int maxQueueSize,
-                               @Value("${fhir.bearerToken}") String bearerToken,
+    public WebClient sourceClient(@Value("${fhir.source.server}") String fhirServer,
+                               @Value("${fhir.source.user}") String user,
+                               @Value("${fhir.source.password}") String password,
+                               @Value("${fhir.source.maxConnections}") int maxConnections,
+                               @Value("${fhir.source.maxQueueSize}") int maxQueueSize,
+                               @Value("${fhir.source.bearerToken}") String bearerToken,
                                @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
-                               @Qualifier("oauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
-        ConnectionProvider provider = ConnectionProvider.builder("data-store")
-                .maxConnections(maxConnections)
-                .pendingAcquireMaxCount(maxQueueSize)
-                .build();
-        HttpClient httpClient = HttpClient.create(provider);
-        WebClient.Builder builder = WebClient.builder()
-                .baseUrl(fhirServer)
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("Accept", "application/fhir+json")
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeMib * 1024 * 1024));
-        if (!bearerToken.isEmpty()) {
-            builder = builder.filter((request, next) -> {
-                ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
-                return next.exchange(newReq);
-            });
-        }
-        if (!user.isEmpty() && !password.isEmpty()) {
-            builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
-        }
-        return builder.filter(oauthExchangeFilterFunction).build();
+                               @Qualifier("sourceOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
+        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
     }
 
     @Bean
-    @Qualifier("oauth")
-    ExchangeFilterFunction oauthExchangeFilterFunction(
-            @Value("${fhir.oauth.issuer.uri}") String issuerUri,
-            @Value("${fhir.oauth.client.id}") String clientId,
-            @Value("${fhir.oauth.client.secret}") String clientSecret) {
+    @Qualifier("sourceOauth")
+    ExchangeFilterFunction sourceOauthExchangeFilterFunction(
+            @Value("${fhir.source.oauth.issuer.uri}") String issuerUri,
+            @Value("${fhir.source.oauth.client.id}") String clientId,
+            @Value("${fhir.source.oauth.client.secret}") String clientSecret) {
+        return getExchangeFilterFunction(issuerUri, clientId, clientSecret);
+    }
+
+    @Bean
+    public WebClient destinationClient(@Value("${fhir.destination.server}") String fhirServer,
+                                  @Value("${fhir.destination.user}") String user,
+                                  @Value("${fhir.destination.password}") String password,
+                                  @Value("${fhir.destination.maxConnections}") int maxConnections,
+                                  @Value("${fhir.destination.maxQueueSize}") int maxQueueSize,
+                                  @Value("${fhir.destination.bearerToken}") String bearerToken,
+                                  @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
+                                  @Qualifier("destinationOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
+        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
+    }
+
+    @Bean
+    @Qualifier("destinationOauth")
+    ExchangeFilterFunction destinationOauthExchangeFilterFunction(
+            @Value("${fhir.destination.oauth.issuer.uri}") String issuerUri,
+            @Value("${fhir.destination.oauth.client.id}") String clientId,
+            @Value("${fhir.destination.oauth.client.secret}") String clientSecret) {
+        return getExchangeFilterFunction(issuerUri, clientId, clientSecret);
+    }
+
+    private ExchangeFilterFunction getExchangeFilterFunction(String issuerUri, String clientId, String clientSecret) {
         if (!issuerUri.isEmpty() && !clientId.isEmpty() && !clientSecret.isEmpty()) {
             logger().debug("Enabling OAuth2 authentication (issuer uri: '{}', client id: '{}').",
                     issuerUri, clientId);
@@ -135,6 +141,30 @@ public class FhirDataEvaluatorApplication {
             logger().debug("Skipping OAuth2 authentication.");
             return (request, next) -> next.exchange(request);
         }
+    }
+
+    private WebClient getWebClient(String fhirServer, String user, String password, int maxConnections, int maxQueueSize,
+                                   String bearerToken, int maxInMemorySizeMib, ExchangeFilterFunction oauthExchangeFilterFunction) {
+        ConnectionProvider provider = ConnectionProvider.builder("data-store")
+                .maxConnections(maxConnections)
+                .pendingAcquireMaxCount(maxQueueSize)
+                .build();
+        HttpClient httpClient = HttpClient.create(provider);
+        WebClient.Builder builder = WebClient.builder()
+                .baseUrl(fhirServer)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .defaultHeader("Accept", "application/fhir+json")
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySizeMib * 1024 * 1024));
+        if (!bearerToken.isEmpty()) {
+            builder = builder.filter((request, next) -> {
+                ClientRequest newReq = ClientRequest.from(request).header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken).build();
+                return next.exchange(newReq);
+            });
+        }
+        if (!user.isEmpty() && !password.isEmpty()) {
+            builder = builder.filter(ExchangeFilterFunctions.basicAuthentication(user, password));
+        }
+        return builder.filter(oauthExchangeFilterFunction).build();
     }
 
     public static void main(String[] args) {
@@ -166,7 +196,7 @@ class EvaluationExecutor implements CommandLineRunner {
     private String projectIdentifierSystem;
     @Value("${projectIdentifierValue}")
     private String projectIdentifierValue;
-    @Value("${fhir.reportDestinationServer}")
+    @Value("${fhir.destination.server}")
     private String reportDestinationServer;
     private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
 
