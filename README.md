@@ -31,8 +31,9 @@ For a more detailed Documentation see: * [Documentation](Documentation/Documenta
 
 ## Run
 
-When running the Fhir Data Evaluator with Docker, it will require a Measure resource file as input and save the resulting
-MeasureReport into a Directory named after the current date combined with the Measure's name (specified in the 'name' field).
+When running the Fhir Data Evaluator with Docker, it will require a Measure resource file as input. The resulting
+MeasureReport will be saved inside `/app/output/` of the Docker container into a new Directory named after the current 
+date combined with the Measure's name (specified in the 'name' field of the Measure).
 If specified, additional CSV files will be created that represent the MeasureReport.
 
 An example of a Measure can be found [here](Documentation/example-measures/example-measure-1.json).
@@ -83,7 +84,7 @@ docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/ap
 
 ### Sending the MeasureReport to a FHIR Server
 
-If `SEND_REPORT_TO_SERVER` is set to true, the MeasureReport is sent to the `FHIR_DESTINATION_SERVER` along with a 
+If `SEND_REPORT_TO_SERVER` is set to true, the MeasureReport is sent to the `FHIR_REPORT_SERVER` along with a
 DocumentReference that is configured with the following environment variables:
 * `AUTHOR_IDENTIFIER_SYSTEM` (example: `http://dsf.dev/sid/organization-identifier`)
 * `AUTHOR_IDENTIFIER_VALUE` (example: `Test_DIC1`)
@@ -92,35 +93,35 @@ DocumentReference that is configured with the following environment variables:
 
 ## Environment Variables
 
-| Name                                 | Default                                                       | Description                                                                                                |
-|:-------------------------------------|:--------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------|
-| FHIR_SOURCE_SERVER                   | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for downloading the resources.                                      |
-| FHIR_SOURCE_USER                     |                                                               | The username to use for HTTP Basic Authentication for the source FHIR server.                              |
-| FHIR_SOURCE_PASSWORD                 |                                                               | The password to use for HTTP Basic Authentication for the source FHIR server.                              |
-| FHIR_SOURCE_MAX_CONNECTIONS          | 4                                                             | The maximum number of connections to open towards the source FHIR server.                                  |
-| FHIR_SOURCE_MAX_QUEUE_SIZE           | 500                                                           | The maximum number FHIR server requests at the source FHIR server to queue before returning an error.      |
-| FHIR_SOURCE_PAGE_COUNT               | 1000                                                          | The number of resources per page to request from the source FHIR server.                                   |
-| FHIR_SOURCE_BEARER_TOKEN             |                                                               | Bearer token for authentication for the source FHIR server.                                                |
-| FHIR_SOURCE_OAUTH_ISSUER_URI         |                                                               | The issuer URI of the OpenID Connect provider for the source FHIR server.                                  |
-| FHIR_SOURCE_OAUTH_CLIENT_ID          |                                                               | The client ID to use for authentication with OpenID Connect provider for the source FHIR server.           |
-| FHIR_SOURCE_OAUTH_CLIENT_SECRET      |                                                               | The client secret to use for authentication with OpenID Connect provider for the source FHIR server.       |
-| FHIR_DESTINATION_SERVER              | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for (optionally) uploading the MeasureReport.                       |
-| FHIR_DESTINATION_USER                |                                                               | The username to use for HTTP Basic Authentication for the destination FHIR server.                         |
-| FHIR_DESTINATION_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the destination FHIR server.                         |
-| FHIR_DESTINATION_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the destination FHIR server.                             |
-| FHIR_DESTINATION_MAX_QUEUE_SIZE      | 500                                                           | The maximum number FHIR server requests at the destination FHIR server to queue before returning an error. |
-| FHIR_DESTINATION_BEARER_TOKEN        |                                                               | Bearer token for authentication for the destination FHIR server.                                           |
-| FHIR_DESTINATION_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the destination FHIR server.                             |
-| FHIR_DESTINATION_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the destination FHIR server.      |
-| FHIR_DESTINATION_OAUTH_CLIENT_SECRET |                                                               | The client secret to use for authentication with OpenID Connect provider for the destination FHIR server.  |
-| MAX_IN_MEMORY_SIZE_MIB               | 10                                                            | The maximum in-memory buffer size for each webclient in MiB.                                               |
-| TZ                                   | Europe/Berlin                                                 | The time zone used to create the output directory and set the date in the DocumentReference.               |
-| CONVERT_TO_CSV                       | false                                                         | Whether for the MeasureReport should be generated CSV files.                                               |
-| SEND_REPORT_TO_SERVER                | false                                                         | Whether the MeasureReport should be sent to a FHIR server.                                                 |
-| AUTHOR_IDENTIFIER_SYSTEM             | http://dsf.dev/sid/organization-identifier                    | The system of the author organization used when uploading the report.                                      |
-| AUTHOR_IDENTIFIER_VALUE              |                                                               | The code of the author organization used when uploading the report.                                        |
-| PROJECT_IDENTIFIER_SYSTEM            | http://medizininformatik-initiative.de/sid/project-identifier | The system of the master identifier used when uploading the report.                                        |
-| PROJECT_IDENTIFIER_VALUE             |                                                               | The value of the master identifier used when uploading the report.                                         |
+| Name                            | Default                                                       | Description                                                                                           |
+|:--------------------------------|:--------------------------------------------------------------|:------------------------------------------------------------------------------------------------------|
+| FHIR_SOURCE_SERVER              | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for downloading the resources.                                 |
+| FHIR_SOURCE_USER                |                                                               | The username to use for HTTP Basic Authentication for the source FHIR server.                         |
+| FHIR_SOURCE_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the source FHIR server.                         |
+| FHIR_SOURCE_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the source FHIR server.                             |
+| FHIR_SOURCE_MAX_QUEUE_SIZE      | 500                                                           | The maximum number FHIR server requests at the source FHIR server to queue before returning an error. |
+| FHIR_SOURCE_PAGE_COUNT          | 1000                                                          | The number of resources per page to request from the source FHIR server.                              |
+| FHIR_SOURCE_BEARER_TOKEN        |                                                               | Bearer token for authentication for the source FHIR server.                                           |
+| FHIR_SOURCE_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the source FHIR server.                             |
+| FHIR_SOURCE_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the source FHIR server.      |
+| FHIR_SOURCE_OAUTH_CLIENT_SECRET |                                                               | The client secret to use for authentication with OpenID Connect provider for the source FHIR server.  |
+| FHIR_REPORT_SERVER              | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for (optionally) uploading the MeasureReport.                  |
+| FHIR_REPORT_USER                |                                                               | The username to use for HTTP Basic Authentication for the Report FHIR server.                         |
+| FHIR_REPORT_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the Report FHIR server.                         |
+| FHIR_REPORT_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the Report FHIR server.                             |
+| FHIR_REPORT_MAX_QUEUE_SIZE      | 500                                                           | The maximum number FHIR server requests at the Report FHIR server to queue before returning an error. |
+| FHIR_REPORT_BEARER_TOKEN        |                                                               | Bearer token for authentication for the Report FHIR server.                                           |
+| FHIR_REPORT_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the Report FHIR server.                             |
+| FHIR_REPORT_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the Report FHIR server.      |
+| FHIR_REPORT_OAUTH_CLIENT_SECRET |                                                               | The client secret to use for authentication with OpenID Connect provider for the Report FHIR server.  |
+| MAX_IN_MEMORY_SIZE_MIB          | 10                                                            | The maximum in-memory buffer size for each webclient in MiB.                                          |
+| TZ                              | Europe/Berlin                                                 | The time zone used to create the output directory and set the date in the DocumentReference.          |
+| CONVERT_TO_CSV                  | false                                                         | Whether for the MeasureReport should be generated CSV files.                                          |
+| SEND_REPORT_TO_SERVER           | false                                                         | Whether the MeasureReport should be sent to the FHIR Report server.                                   |
+| AUTHOR_IDENTIFIER_SYSTEM        | http://dsf.dev/sid/organization-identifier                    | The system of the author organization used when uploading the report.                                 |
+| AUTHOR_IDENTIFIER_VALUE         |                                                               | The code of the author organization used when uploading the report.                                   |
+| PROJECT_IDENTIFIER_SYSTEM       | http://medizininformatik-initiative.de/sid/project-identifier | The system of the master identifier used when uploading the report.                                   |
+| PROJECT_IDENTIFIER_VALUE        |                                                               | The value of the master identifier used when uploading the report.                                    |
 
 
 ## Documentation

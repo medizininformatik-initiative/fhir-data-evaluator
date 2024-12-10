@@ -111,10 +111,10 @@ services:
       FHIR_SOURCE_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
       FHIR_SOURCE_OAUTH_CLIENT_ID: "account"
       FHIR_SOURCE_OAUTH_CLIENT_SECRET: "test"
-      FHIR_DESTINATION_SERVER: "https://secure-fhir-server:8443/fhir"
-      FHIR_DESTINATION_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
-      FHIR_DESTINATION_OAUTH_CLIENT_ID: "account"
-      FHIR_DESTINATION_OAUTH_CLIENT_SECRET: "test"
+      FHIR_REPORT_SERVER: "https://secure-fhir-server:8443/fhir"
+      FHIR_REPORT_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
+      FHIR_REPORT_OAUTH_CLIENT_ID: "account"
+      FHIR_REPORT_OAUTH_CLIENT_SECRET: "test"
       SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
       AUTHOR_IDENTIFIER_SYSTEM: ${FDE_AUTHOR_IDENTIFIER_SYSTEM:-}
       AUTHOR_IDENTIFIER_VALUE: ${FDE_AUTHOR_IDENTIFIER_VALUE:-}

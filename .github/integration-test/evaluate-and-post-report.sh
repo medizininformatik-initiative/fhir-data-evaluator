@@ -39,12 +39,12 @@ get_response() {
                       -d 'grant_type=client_credentials' \
                       -d 'client_id=account' \
                       -d 'client_secret=test'")
-    FHIR_DESTINATION_BEARER_TOKEN=$(echo "$oauth_response" | jq -r '.access_token')
+    FHIR_REPORT_BEARER_TOKEN=$(echo "$oauth_response" | jq -r '.access_token')
 
     response=$(docker exec "$CURL_TESTER_ID" sh -c "
                   curl -s 'https://secure-fhir-server:8443/fhir/$URL' \
                            -H 'Content-Type: application/fhir+json' \
-                           -H 'Authorization: Bearer $FHIR_DESTINATION_BEARER_TOKEN'")
+                           -H 'Authorization: Bearer $FHIR_REPORT_BEARER_TOKEN'")
 
     echo "$response"
   fi

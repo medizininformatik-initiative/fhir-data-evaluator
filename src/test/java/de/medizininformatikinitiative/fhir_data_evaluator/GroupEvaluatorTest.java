@@ -1164,8 +1164,6 @@ class GroupEvaluatorTest {
         @DisplayName("Test one MedicationAdministration that references one Medication")
         public void test_oneReference() {
             when(dataStore.getResources("/" + MEDICATION_ADMINISTRATION_QUERY)).thenReturn(Flux.just(getMedAdministrationWithMedication()));
-            var parser = FhirContext.forR4().newJsonParser();
-            System.out.println(parser.encodeResourceToString(getMedication()));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(MEDICATION_RESOLVE_PATH).setCode(new CodeableConcept(MED_ADM_DEF_CODING))))
@@ -1187,8 +1185,6 @@ class GroupEvaluatorTest {
         @DisplayName("Test one MedicationAdministration that references a Medication that does not exist")
         public void test_oneReference_withoutReferencedObject() {
             when(dataStore.getResources("/" + MEDICATION_ADMINISTRATION_QUERY)).thenReturn(Flux.just(new ResourceWithIncludes(getMedication(), Map.of(), pathEngine)));
-            var parser = FhirContext.forR4().newJsonParser();
-            System.out.println(parser.encodeResourceToString(getMedication()));
             Measure.MeasureGroupComponent measureGroup = getMeasureGroup()
                     .setStratifier(List.of(
                             new Measure.MeasureGroupStratifierComponent().setCriteria(MEDICATION_RESOLVE_PATH).setCode(new CodeableConcept(MED_ADM_DEF_CODING))))
