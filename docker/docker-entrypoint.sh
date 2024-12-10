@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 if [ "${SEND_REPORT_TO_SERVER}" = true ]; then
-  vars_for_upload=(FHIR_REPORT_DESTINATION_SERVER AUTHOR_IDENTIFIER_SYSTEM AUTHOR_IDENTIFIER_VALUE PROJECT_IDENTIFIER_SYSTEM PROJECT_IDENTIFIER_VALUE)
+  vars_for_upload=(FHIR_REPORT_SERVER AUTHOR_IDENTIFIER_SYSTEM AUTHOR_IDENTIFIER_VALUE PROJECT_IDENTIFIER_SYSTEM PROJECT_IDENTIFIER_VALUE)
   for var in "${vars_for_upload[@]}"; do
      if [[ -z "${!var}" ]]; then
         echo "In order to upload the MeasureReport to a FHIR server, all following environment variables must be set" \

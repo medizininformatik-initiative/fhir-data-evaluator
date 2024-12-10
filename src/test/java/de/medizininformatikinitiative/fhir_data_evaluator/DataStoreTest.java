@@ -45,7 +45,7 @@ class DataStoreTest {
                     .build();
             FhirContext context = FhirContext.forR4();
             IParser parser = context.newJsonParser();
-            dataStore = new DataStore(client, parser, 1000, null, context, context.newFhirPath());
+            dataStore = new DataStore(client, parser, 1000, context, context.newFhirPath());
         }
 
         @ParameterizedTest
@@ -110,7 +110,7 @@ class DataStoreTest {
                     .build();
             FhirContext context = FhirContext.forR4();
             IParser parser = context.newJsonParser();
-            dataStore = new DataStore(client, parser, 1000, null, context, context.newFhirPath());
+            dataStore = new DataStore(client, parser, 1000, context, context.newFhirPath());
         }
 
         @Test
