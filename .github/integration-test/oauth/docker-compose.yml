@@ -107,13 +107,30 @@ services:
       test-oauth:
     environment:
       CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
-      FHIR_SERVER: "https://secure-fhir-server:8443/fhir"
-      FHIR_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
-      FHIR_OAUTH_CLIENT_ID: "account"
-      FHIR_OAUTH_CLIENT_SECRET: "test"
+      FHIR_SOURCE_SERVER: "https://secure-fhir-server:8443/fhir"
+      FHIR_SOURCE_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
+      FHIR_SOURCE_OAUTH_CLIENT_ID: "account"
+      FHIR_SOURCE_OAUTH_CLIENT_SECRET: "test"
+      FHIR_REPORT_SERVER: "https://secure-fhir-server:8443/fhir"
+      FHIR_REPORT_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
+      FHIR_REPORT_OAUTH_CLIENT_ID: "account"
+      FHIR_REPORT_OAUTH_CLIENT_SECRET: "test"
+      SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
+      AUTHOR_IDENTIFIER_SYSTEM: ${FDE_AUTHOR_IDENTIFIER_SYSTEM:-}
+      AUTHOR_IDENTIFIER_VALUE: ${FDE_AUTHOR_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM: ${FDE_PROJECT_IDENTIFIER_SYSTEM:-}
+      PROJECT_IDENTIFIER_VALUE: ${FDE_PROJECT_IDENTIFIER_VALUE:-}
     volumes:
       - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
       - "${FDE_OUTPUT_DIR:-../output}:/app/output"
+      - "certs:/app/certs"
+  curl-tester: # dummy container from which curl can request data within the same network as the other containers
+    build: .
+    entrypoint: [ "tail", "-f", "/dev/null" ]
+    command: ""
+    networks:
+      test-oauth:
+    volumes:
       - "certs:/app/certs"
 volumes:
   data-store-data:
