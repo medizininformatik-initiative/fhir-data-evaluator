@@ -3,7 +3,6 @@
 DOCKER_COMPOSE_FILE=.github/integration-test/$1/docker-compose.yml
 export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/icd10-measure.json
 export FDE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-icd10-to-csv-test
-export FDE_CONVERT_TO_CSV=true
 
 mkdir "$FDE_OUTPUT_DIR"
 docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-data-evaluator
@@ -11,8 +10,7 @@ docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-d
 today=$(date +"%Y-%m-%d")
 OUTPUT_DIR=$(find "$FDE_OUTPUT_DIR" -type d -name "*$today*" | head -n 1)
 
-#wait for csv file creation
-sleep 1
+./csv-converter.sh "$OUTPUT_DIR"/measure-report.json "$OUTPUT_DIR"
 
 EXPECTED_STRATIFIER_COUNT=2
 

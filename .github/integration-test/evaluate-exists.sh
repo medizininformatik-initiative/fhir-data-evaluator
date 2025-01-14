@@ -3,7 +3,6 @@
 DOCKER_COMPOSE_FILE=.github/integration-test/$1/docker-compose.yml
 export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/exists-measure.json
 export FDE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-exists-test
-export FDE_CONVERT_TO_CSV=false
 
 mkdir "$FDE_OUTPUT_DIR"
 docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-data-evaluator

@@ -106,7 +106,6 @@ services:
     networks:
       test-oauth:
     environment:
-      CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
       FHIR_SOURCE_SERVER: "https://secure-fhir-server:8443/fhir"
       FHIR_SOURCE_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
       FHIR_SOURCE_OAUTH_CLIENT_ID: "account"
