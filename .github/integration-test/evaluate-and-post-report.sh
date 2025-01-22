@@ -5,7 +5,6 @@ DOCKER_COMPOSE_FILE=.github/integration-test/"$1"/docker-compose.yml
 PROJECT_IDENTIFIER_VALUE="$2"
 export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/icd10-measure.json
 export FDE_OUTPUT_DIR=$PWD/.github/integration-test/evaluate-and-post
-export FDE_CONVERT_TO_CSV=false
 export FDE_AUTHOR_IDENTIFIER_SYSTEM=http://dsf.dev/sid/organization-identifier
 export FDE_AUTHOR_IDENTIFIER_VALUE=Test_DIC1
 export FDE_PROJECT_IDENTIFIER_SYSTEM=http://medizininformatik-initiative.de/sid/project-identifier

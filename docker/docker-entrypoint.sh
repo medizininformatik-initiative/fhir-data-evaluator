@@ -60,8 +60,3 @@ else
     echo "# No CA *.pem cert files found in /app/certs -> starting fhir data evaluator without own CAs"
     java -jar fhir-data-evaluator.jar "$outputDir" "$dateForBundle"
 fi
-
-
-if [ "${CONVERT_TO_CSV}" = true ]; then
-  bash /app/csv-converter.sh /app/output/"$outputDir"
-fi

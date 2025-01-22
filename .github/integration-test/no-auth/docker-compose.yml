@@ -13,7 +13,6 @@ services:
   fhir-data-evaluator:
     image: fhir-data-evaluator
     environment:
-      CONVERT_TO_CSV: ${FDE_CONVERT_TO_CSV:-true}
       FHIR_SOURCE_SERVER: "http://fhir-server:8080/fhir"
       FHIR_REPORT_SERVER: "http://fhir-server:8080/fhir"
       SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
