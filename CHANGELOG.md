@@ -13,6 +13,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 ### Security
 
+## [1.2.0] - 2025-01-28
+
+### Added
+- Add Second Fhir Server for Upload
+- Add Support for Reference Resolve
+
+### Changed
+- Seperated CSV Converter from the FDE as single bash script
+
 ## [1.1.0] - 2024-10-30
 
 ### Added
