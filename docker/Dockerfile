@@ -5,7 +5,6 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get clean
 
 COPY /target/fhir-data-evaluator.jar /app/
-COPY /src/main/csv-converter.sh /app/csv-converter.sh
 
 ENV CERTIFICATE_PATH=/app/certs
 ENV TRUSTSTORE_PATH=/app/truststore

@@ -436,7 +436,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "MedicationAdministration?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration"
+            "expression": "MedicationAdministration?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration&_include=MedicationAdministration:medication"
           },
           "id": "initial-population-identifier-4"
         },
@@ -485,7 +485,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "MedicationAdministration.medicationCodeableConcept.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn').code"
+            "expression": "MedicationAdministration.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn')"
           },
           "code": {
             "coding": [
@@ -500,7 +500,7 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "MedicationAdministration.medicationCodeableConcept.coding.where(system='http://fhir.de/CodeSystem/bfarm/atc').code"
+            "expression": "MedicationAdministration.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/bfarm/atc')"
           },
           "code": {
             "coding": [
@@ -511,6 +511,188 @@
             ]
           },
           "id": "strat-12"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "MedicationStatement?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement&_include=MedicationStatement:medication"
+          },
+          "id": "initial-population-identifier-med-stat-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationStatement"
+          },
+          "id": "measure-population-identifier-med-stat-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationStatement.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-med-stat-1"
+            }
+          ],
+          "id": "measure-observation-identifier-med-stat-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationStatement.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medication-statement-medication-code-pzn"
+              }
+            ]
+          },
+          "id": "strat-med-stat-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationStatement.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/bfarm/atc')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medication-statement-medication-code-atc"
+              }
+            ]
+          },
+          "id": "strat-med-stat-2"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "MedicationRequest?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationRequest&_include=MedicationRequest:medication"
+          },
+          "id": "initial-population-identifier-med-req-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationStatement"
+          },
+          "id": "measure-population-identifier-med-req-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationRequest.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-med-req-1"
+            }
+          ],
+          "id": "measure-observation-identifier-med-req-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationRequest.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/ifa/pzn')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medication-request-medication-code-pzn"
+              }
+            ]
+          },
+          "id": "strat-med-req-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "MedicationRequest.medication.resolve().ofType(Medication).code.coding.where(system='http://fhir.de/CodeSystem/bfarm/atc')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-data-evaluator/strat/system",
+                "code": "medication-request-medication-code-atc"
+              }
+            ]
+          },
+          "id": "strat-med-req-2"
         }
       ]
     },
@@ -1609,6 +1791,309 @@
             ]
           },
           "id": "strat-18"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Encounter?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung"
+          },
+          "id": "initial-population-identifier-9"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter"
+          },
+          "id": "measure-population-identifier-9"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-9"
+            }
+          ],
+          "id": "measure-observation-identifier-9"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.type.coding.where(system='http://fhir.de/CodeSystem/Kontaktebene')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "encounter-type-contact-level"
+              }
+            ]
+          },
+          "id": "strat-19"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.type.coding.where(system='http://fhir.de/CodeSystem/kontaktart-de')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "encounter-type-contact-type"
+              }
+            ]
+          },
+          "id": "strat-20"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.class.coding"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "encounter-class-coding"
+              }
+            ]
+          },
+          "id": "strat-21"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.serviceType.coding.where(system='http://fhir.de/CodeSystem/dkgev/Fachabteilungsschluessel')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "encounter-servicetype-coding-fachabteilung"
+              }
+            ]
+          },
+          "id": "strat-22"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Encounter.serviceType.coding.where(system='http://fhir.de/CodeSystem/dkgev/Fachabteilungsschluessel-erweitert')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "encounter-servicetype-coding-fachabteilung-erweitert"
+              }
+            ]
+          },
+          "id": "strat-23"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Observation?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus"
+          },
+          "id": "initial-population-identifier-vitalstatus-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation"
+          },
+          "id": "measure-population-identifier-vitalstatus-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-vitalstatus-1"
+            }
+          ],
+          "id": "measure-observation-identifier-vitalstatus-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.code.coding.where(system='http://loinc.org')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-vitalstatus-loinc-code"
+              }
+            ]
+          },
+          "id": "strat-vitalstatus-1"
+        },
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Observation.value.coding.where(system='https://www.medizininformatik-initiative.de/fhir/core/modul-person/CodeSystem/Vitalstatus')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "observation-vitalstatus-value"
+              }
+            ]
+          },
+          "id": "strat-vitalstatus-2"
+        }
+      ]
+    },
+    {
+      "population": [
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/x-fhir-query",
+            "expression": "Condition?_profile:below=https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Todesursache"
+          },
+          "id": "initial-population-identifier-death-reason-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-population"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition"
+          },
+          "id": "measure-population-identifier-death-reason-1"
+        },
+        {
+          "code": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "measure-observation"
+              }
+            ]
+          },
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.subject.reference"
+          },
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-aggregateMethod",
+              "valueCode": "unique-count"
+            },
+            {
+              "url": "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/cqfm-criteriaReference",
+              "valueString": "measure-population-identifier-death-reason-1"
+            }
+          ],
+          "id": "measure-observation-identifier-death-reason-1"
+        }
+      ],
+      "stratifier": [
+        {
+          "criteria": {
+            "language": "text/fhirpath",
+            "expression": "Condition.code.coding.where(system='http://hl7.org/fhir/sid/icd-10')"
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://fhir-evaluator/strat/system",
+                "code": "condition-death-reason-icd10-code"
+              }
+            ]
+          },
+          "id": "strat-death-reason-1"
         }
       ]
     }

@@ -107,6 +107,9 @@ jobs:
       - name: Install Blazectl
         run: .github/scripts/install-blazectl.sh
 
+      - name: Copy CSV-Converter
+        run: cp csv-converter.sh .github/integration-test/
+
       - name: Download FhirDataEvaluator Image
         uses: actions/download-artifact@v4
         with:
@@ -149,20 +152,28 @@ jobs:
       - name: Run Integration Test for Unique Count with Components and with CSV
         run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh ${{ matrix.test }}
 
+      - name: Run Integration Test for Reference Resolve
+        run: .github/integration-test/evaluate-reference-resolve.sh ${{ matrix.test }}
+
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 
-      - name: Run Integration Test for Posting the MeasureReport to the FHIR server
-        run: .github/integration-test/evaluate-and-post-report.sh Test_PROJECT_Evaluation_1
-        if: matrix.test == 'no-auth'
+      - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server
+        run: .github/integration-test/evaluate-and-post-report.sh ${{ matrix.test }} Test_PROJECT_Evaluation_1
 
-      - name: Run Integration Test for Posting the MeasureReport to the FHIR server with the Same Project Identifier
-        run: .github/integration-test/evaluate-and-post-update.sh Test_PROJECT_Evaluation_1
-        if: matrix.test == 'no-auth'
+      - name: Run Integration Test using the CSV-Converter with a URL as input
+        run: |
+          # This test must run inside the Docker network to be able to access the services with curl
+          export CURL_TESTER_ID=$(docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml ps -q curl-tester)
+          docker cp .github/integration-test/csv-from-url.sh $CURL_TESTER_ID:/app/csv-from-url.sh
+          docker cp ./csv-converter.sh $CURL_TESTER_ID:/app/csv-converter.sh
+          docker exec $CURL_TESTER_ID sh -c ". /app/csv-from-url.sh ${{ matrix.test }}"
 
-      - name: Run Integration Test for Posting the MeasureReport to the FHIR server with a Different Project Identifier
-        run: .github/integration-test/evaluate-and-post-different-doc-ref.sh Test_PROJECT_Evaluation_2
-        if: matrix.test == 'no-auth'
+      - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server with the Same Project Identifier
+        run: .github/integration-test/evaluate-and-post-update.sh ${{ matrix.test }} Test_PROJECT_Evaluation_1
+
+      - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server with a Different Project Identifier
+        run: .github/integration-test/evaluate-and-post-different-doc-ref.sh ${{ matrix.test }} Test_PROJECT_Evaluation_2
 
       - name: Remove Blaze volumes
         run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml down -v

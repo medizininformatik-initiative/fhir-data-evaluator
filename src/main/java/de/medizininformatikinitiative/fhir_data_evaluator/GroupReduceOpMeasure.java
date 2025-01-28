@@ -1,11 +1,10 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.InitialAndMeasurePopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.MeasurePopulation;
 import de.medizininformatikinitiative.fhir_data_evaluator.populations.individuals.InitialAndMeasureIndividual;
-import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,27 +26,24 @@ import static java.util.Objects.requireNonNull;
  */
 public record GroupReduceOpMeasure(
         List<StratifierReduceOp<InitialAndMeasurePopulation, InitialAndMeasureIndividual>> stratifierReduceOps,
-        ExpressionNode measurePopulationExpression,
-        FHIRPathEngine fhirPathEngine)
-        implements BiFunction<GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>, Resource,
+        IFhirPath.IParsedExpression measurePopulationExpression)
+        implements BiFunction<GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>, ResourceWithIncludes,
         GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual>> {
 
     public GroupReduceOpMeasure {
         requireNonNull(stratifierReduceOps);
         requireNonNull(measurePopulationExpression);
-        requireNonNull(fhirPathEngine);
     }
 
     @Override
     public GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual> apply(
             GroupResult<InitialAndMeasurePopulation, InitialAndMeasureIndividual> groupResult,
-            Resource resource) {
+            ResourceWithIncludes resource) {
         return groupResult.applyResource(stratifierReduceOps, resource, calcIncrementIndividual(resource));
     }
 
-    private InitialAndMeasureIndividual calcIncrementIndividual(Resource resource) {
-        Optional<Resource> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression,
-                fhirPathEngine);
+    private InitialAndMeasureIndividual calcIncrementIndividual(ResourceWithIncludes resource) {
+        Optional<ResourceWithIncludes> measurePopResource = MeasurePopulation.evaluateMeasurePopResource(resource, measurePopulationExpression);
 
         return new InitialAndMeasureIndividual(measurePopResource.isPresent());
     }

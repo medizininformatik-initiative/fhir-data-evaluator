@@ -1,10 +1,10 @@
 package de.medizininformatikinitiative.fhir_data_evaluator.populations;
 
+import ca.uhn.fhir.fhirpath.IFhirPath;
+import de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithIncludes;
 import org.hl7.fhir.r4.model.Base;
-import org.hl7.fhir.r4.model.ExpressionNode;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.utils.FHIRPathEngine;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +28,8 @@ public record MeasurePopulation(int count) {
         return new MeasurePopulation(count + 1);
     }
 
-    public static Optional<Resource> evaluateMeasurePopResource(Resource resource, ExpressionNode expression, FHIRPathEngine fhirPathEngine) {
-        List<Base> found = fhirPathEngine.evaluate(resource, expression);
+    public static Optional<ResourceWithIncludes> evaluateMeasurePopResource(ResourceWithIncludes resource, IFhirPath.IParsedExpression expression) {
+        List<Base> found = resource.fhirPathEngine().evaluate(resource.mainResource(), expression, Base.class);
 
         if (found.isEmpty())
             return Optional.empty();
@@ -38,7 +38,7 @@ public record MeasurePopulation(int count) {
             throw new IllegalArgumentException("Measure population evaluated into more than one entity");
 
         if (found.get(0) instanceof Resource r)
-            return Optional.of(r);
+            return Optional.of(new ResourceWithIncludes(r, resource.includes(), resource.fhirPathEngine()));
 
         throw new IllegalArgumentException("Measure population evaluated into different type than 'Resource'");
     }

@@ -122,6 +122,53 @@
         "method": "POST",
         "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
       }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationAdministration",
+        "id": "med-adm-1",
+        "meta": {
+          "versionId": "974",
+          "lastUpdated": "2024-04-16T15:02:56.856Z"
+        },
+        "status": "completed",
+        "medicationReference": {
+          "reference": "Medication/med-1"
+        },
+        "effectiveDateTime": "2016-06-13T10:04:58Z"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationAdministration/med-adm-1"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Medication",
+        "id": "med-1",
+        "meta": {
+          "versionId": "974",
+          "lastUpdated": "2024-04-16T15:02:56.856Z",
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1000126",
+              "display": "1 ML medroxyprogesterone acetate 150 MG/ML Injection"
+            }
+          ],
+          "text": "1 ML medroxyprogesterone acetate 150 MG/ML Injection"
+        },
+        "status": "active"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Medication/med-1"
+      }
     }
   ]
 }

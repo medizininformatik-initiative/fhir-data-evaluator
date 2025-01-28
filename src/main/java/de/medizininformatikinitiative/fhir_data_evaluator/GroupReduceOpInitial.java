@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
  * @param stratifierReduceOps holds one {@link StratifierReduceOp} for each stratifier in a group
  */
 public record GroupReduceOpInitial(List<StratifierReduceOp<InitialPopulation, InitialIndividual>> stratifierReduceOps)
-        implements BiFunction<GroupResult<InitialPopulation, InitialIndividual>, Resource,
+        implements BiFunction<GroupResult<InitialPopulation, InitialIndividual>, ResourceWithIncludes,
         GroupResult<InitialPopulation, InitialIndividual>> {
 
     public GroupReduceOpInitial {
@@ -30,7 +30,7 @@ public record GroupReduceOpInitial(List<StratifierReduceOp<InitialPopulation, In
 
     @Override
     public GroupResult<InitialPopulation, InitialIndividual> apply(GroupResult<InitialPopulation, InitialIndividual> groupResult,
-                                                                   Resource resource) {
+                                                                   ResourceWithIncludes resource) {
         return groupResult.applyResource(stratifierReduceOps, resource, InitialIndividual.INSTANCE);
     }
 }

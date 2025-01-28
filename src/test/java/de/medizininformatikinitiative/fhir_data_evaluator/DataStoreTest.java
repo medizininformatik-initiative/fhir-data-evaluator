@@ -43,24 +43,25 @@ class DataStoreTest {
                     .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
                     .defaultHeader("Accept", "application/fhir+json")
                     .build();
-            IParser parser = FhirContext.forR4().newJsonParser();
-            dataStore = new DataStore(client, parser, 1000, null);
+            FhirContext context = FhirContext.forR4();
+            IParser parser = context.newJsonParser();
+            dataStore = new DataStore(client, parser, 1000, context, context.newFhirPath());
         }
 
         @ParameterizedTest
-        @DisplayName("retires the request")
+        @DisplayName("retries the request")
         @ValueSource(ints = {404, 500, 503, 504})
         void execute_retry(int statusCode) {
             mockStore.enqueue(new MockResponse().setResponseCode(statusCode));
             mockStore.enqueue(new MockResponse().setResponseCode(200)
-                    .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}}]}"));
+                    .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}, \"search\": {\"mode\": \"match\"}}]}"));
 
             var result = dataStore.getResources("/Observation");
             StepVerifier.create(result).expectNextCount(1).verifyComplete();
         }
 
         @Test
-        @DisplayName("fails after 3 unsuccessful retires")
+        @DisplayName("fails after 3 unsuccessful retries")
         void execute_retry_fails() {
             mockStore.enqueue(new MockResponse().setResponseCode(500));
             mockStore.enqueue(new MockResponse().setResponseCode(500));
@@ -107,8 +108,9 @@ class DataStoreTest {
                     .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
                     .defaultHeader("Accept", "application/fhir+json")
                     .build();
-            IParser parser = FhirContext.forR4().newJsonParser();
-            dataStore = new DataStore(client, parser, 1000, null);
+            FhirContext context = FhirContext.forR4();
+            IParser parser = context.newJsonParser();
+            dataStore = new DataStore(client, parser, 1000, context, context.newFhirPath());
         }
 
         @Test

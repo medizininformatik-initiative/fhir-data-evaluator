@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>de.medizininformatikinitiative</groupId>
 	<artifactId>fhir_data_evaluator</artifactId>
-	<version>1.1.0</version>
+	<version>1.2.0</version>
 	<name>Fhir Data Evaluator</name>
 	<description>Fhir Data Evaluator</description>
 	<properties>
@@ -41,6 +41,11 @@
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
 			<artifactId>hapi-fhir-caching-caffeine</artifactId>
+			<version>7.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-validation-resources-r4</artifactId>
 			<version>7.0.2</version>
 		</dependency>
 		<dependency>

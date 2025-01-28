@@ -1,13 +1,11 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.fhirpath.IFhirPath;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.DocumentReference;
-import org.hl7.fhir.r4.model.Resource;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
@@ -19,20 +17,22 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
-@Component
+import static de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithIncludes.processBundleIncludes;
+
 public class DataStore {
 
-    private final WebClient client;
+    private final WebClient webClient;
     private final IParser parser;
     private final int pageCount;
-    private final URI reportDestinationServer;
+    private final FhirContext context;
+    private final IFhirPath applicationFhirPathEngine;
 
-    public DataStore(WebClient client, IParser parser, @Value("${fhir.pageCount}") int pageCount,
-                     @Value("${fhir.reportDestinationServer}") URI reportDestinationServer) {
-        this.client = client;
+    public DataStore(WebClient webClient, IParser parser, int pageCount, FhirContext context, IFhirPath fhirPathEngine) {
+        this.webClient = webClient;
         this.parser = parser;
         this.pageCount = pageCount;
-        this.reportDestinationServer = reportDestinationServer;
+        this.context = context;
+        this.applicationFhirPathEngine = fhirPathEngine;
     }
 
     /**
@@ -41,19 +41,19 @@ public class DataStore {
      * @param query the fhir search query
      * @return the resources found with the {@code query}
      */
-    public Flux<Resource> getResources(String query) {
-        return client.get()
+    public Flux<ResourceWithIncludes> getResources(String query) {
+        return webClient.get()
                 .uri(appendPageCount(query))
                 .retrieve()
                 .bodyToFlux(String.class)
                 .map(response -> parser.parseResource(Bundle.class, response))
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
-                        .map(link -> fetchPage(client, link.getUrl()))
+                        .map(link -> fetchPage(webClient, link.getUrl()))
                         .orElse(Mono.empty()))
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(e -> e instanceof WebClientResponseException &&
                                 shouldRetry(((WebClientResponseException) e).getStatusCode())))
-                .flatMap(bundle -> Flux.fromStream(bundle.getEntry().stream().map(Bundle.BundleEntryComponent::getResource)));
+                .flatMap(bundle -> Flux.fromStream(processBundleIncludes(bundle, applicationFhirPathEngine, context)));
     }
 
     /**
@@ -64,8 +64,7 @@ public class DataStore {
      *                  failure
      */
     public Mono<Void> postReport(String bundle) {
-        return client.post()
-                .uri(reportDestinationServer)
+        return webClient.post()
                 .contentType(MediaType.valueOf("application/fhir+json"))
                 .bodyValue(bundle)
                 .retrieve()
