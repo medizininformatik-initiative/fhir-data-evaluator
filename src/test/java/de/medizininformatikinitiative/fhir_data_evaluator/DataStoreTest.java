@@ -4,7 +4,9 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.hl7.fhir.r4.model.Bundle;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
+import java.util.List;
 
 class DataStoreTest {
 
@@ -26,19 +29,10 @@ class DataStoreTest {
 
         private DataStore dataStore;
 
-        @BeforeAll
-        static void setUp() throws IOException {
+        @BeforeEach
+        void initialize() throws IOException {
             mockStore = new MockWebServer();
             mockStore.start();
-        }
-
-        @AfterAll
-        static void tearDown() throws IOException {
-            mockStore.shutdown();
-        }
-
-        @BeforeEach
-        void initialize() {
             WebClient client = WebClient.builder()
                     .baseUrl("http://localhost:%d/fhir".formatted(mockStore.getPort()))
                     .defaultHeader("Accept", "application/fhir+json")
@@ -46,6 +40,11 @@ class DataStoreTest {
             FhirContext context = FhirContext.forR4();
             IParser parser = context.newJsonParser();
             dataStore = new DataStore(client, parser, 1000, context, context.newFhirPath());
+        }
+
+        @AfterEach
+        void shutDown() throws IOException {
+            mockStore.shutdown();
         }
 
         @ParameterizedTest
@@ -58,6 +57,41 @@ class DataStoreTest {
 
             var result = dataStore.getResources("/Observation");
             StepVerifier.create(result).expectNextCount(1).verifyComplete();
+        }
+
+        @Test
+        void execute_retryPage() {
+            var nextUrl = "http://localhost:%d/fhir/Observation-2".formatted(mockStore.getPort());
+            mockStore.enqueue(new MockResponse().setResponseCode(200)
+                    .setBody(("{\"resourceType\":\"Bundle\",\"link\": [{\"relation\": \"next\", \"url\": \"%s\"}],  " +
+                            "\"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}, \"search\": {\"mode\": \"match\"}}]}").formatted(nextUrl)));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(200)
+                    .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}, \"search\": {\"mode\": \"match\"}}]}"));
+
+            var result = dataStore.getResources("/Observation");
+            StepVerifier.create(result).expectNextCount(2).verifyComplete();
+        }
+
+        @Test
+        void execute_retryPageTooManyFails() {
+            var nextUrl = "http://localhost:%d/fhir/Observation-2".formatted(mockStore.getPort());
+            mockStore.enqueue(new MockResponse().setResponseCode(200)
+                    .setBody(("{\"resourceType\":\"Bundle\",\"link\": [{\"relation\": \"next\", \"url\": \"%s\"}],  " +
+                            "\"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}, \"search\": {\"mode\": \"match\"}}]}")
+                            .formatted(nextUrl)));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(500));
+            mockStore.enqueue(new MockResponse().setResponseCode(200)
+                    .setBody("{\"resourceType\":\"Bundle\", \"entry\": [{\"resource\": {\"resourceType\":\"Observation\"}, \"search\": {\"mode\": \"match\"}}]}"));
+
+            var result = dataStore.getResources("/Observation");
+            StepVerifier.create(result).expectNextCount(1).expectErrorMessage("Retries exhausted: 3/3").verify();
         }
 
         @Test
