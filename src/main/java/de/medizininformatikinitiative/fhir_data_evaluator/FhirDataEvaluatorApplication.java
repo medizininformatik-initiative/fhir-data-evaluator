@@ -83,8 +83,9 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public MeasureEvaluator measureEvaluator(DataStore sourceDataStore, IFhirPath fhirPathEngine) {
-        return new MeasureEvaluator(sourceDataStore, fhirPathEngine);
+    public MeasureEvaluator measureEvaluator(DataStore sourceDataStore, IFhirPath fhirPathEngine,
+                                             @Value("${fhir.source.maxConnections}") int maxConnections) {
+        return new MeasureEvaluator(sourceDataStore, fhirPathEngine, maxConnections);
     }
 
     @Bean
@@ -92,11 +93,10 @@ public class FhirDataEvaluatorApplication {
                                @Value("${fhir.source.user}") String user,
                                @Value("${fhir.source.password}") String password,
                                @Value("${fhir.source.maxConnections}") int maxConnections,
-                               @Value("${fhir.source.maxQueueSize}") int maxQueueSize,
                                @Value("${fhir.source.bearerToken}") String bearerToken,
                                @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
                                @Qualifier("sourceOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
-        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
+        return getWebClient(fhirServer, user, password, maxConnections, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
     }
 
     @Bean
@@ -113,11 +113,10 @@ public class FhirDataEvaluatorApplication {
                                   @Value("${fhir.report.user}") String user,
                                   @Value("${fhir.report.password}") String password,
                                   @Value("${fhir.report.maxConnections}") int maxConnections,
-                                  @Value("${fhir.report.maxQueueSize}") int maxQueueSize,
                                   @Value("${fhir.report.bearerToken}") String bearerToken,
                                   @Value("${maxInMemorySizeMib}") int maxInMemorySizeMib,
                                   @Qualifier("reportOauth") ExchangeFilterFunction oauthExchangeFilterFunction) {
-        return getWebClient(fhirServer, user, password, maxConnections, maxQueueSize, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
+        return getWebClient(fhirServer, user, password, maxConnections, bearerToken, maxInMemorySizeMib, oauthExchangeFilterFunction);
     }
 
     @Bean
@@ -154,11 +153,10 @@ public class FhirDataEvaluatorApplication {
         }
     }
 
-    private WebClient getWebClient(String fhirServer, String user, String password, int maxConnections, int maxQueueSize,
+    private WebClient getWebClient(String fhirServer, String user, String password, int maxConnections,
                                    String bearerToken, int maxInMemorySizeMib, ExchangeFilterFunction oauthExchangeFilterFunction) {
         ConnectionProvider provider = ConnectionProvider.builder("data-store")
                 .maxConnections(maxConnections)
-                .pendingAcquireMaxCount(maxQueueSize)
                 .build();
         HttpClient httpClient = HttpClient.create(provider);
         WebClient.Builder builder = WebClient.builder()

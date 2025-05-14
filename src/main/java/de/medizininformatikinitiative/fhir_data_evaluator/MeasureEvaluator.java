@@ -12,13 +12,16 @@ public class MeasureEvaluator {
 
     private final GroupEvaluator groupEvaluator;
     private final Scheduler SCHEDULER = Schedulers.parallel();
+    private final int maxConcurrency;
 
-    public MeasureEvaluator(DataStore dataStore, IFhirPath fhirPathEngine) {
+    public MeasureEvaluator(DataStore dataStore, IFhirPath fhirPathEngine, int maxConcurrency) {
         this.groupEvaluator = new GroupEvaluator(dataStore, fhirPathEngine);
+        this.maxConcurrency = maxConcurrency;
     }
 
     public Mono<MeasureReport> evaluateMeasure(Measure measure) {
-        return Flux.fromStream(measure.getGroup().stream()).parallel().runOn(SCHEDULER).flatMap(groupEvaluator::evaluateGroup)
+        return Flux.fromStream(measure.getGroup().stream()).parallel(maxConcurrency).runOn(SCHEDULER)
+                .flatMap(groupEvaluator::evaluateGroup, false, 1)
                 .sequential().collectList()
                 .map(measureReportGroup -> new MeasureReport().setGroup(measureReportGroup));
     }

@@ -108,7 +108,6 @@ DocumentReference that is configured with the following environment variables:
 | FHIR_SOURCE_USER                |                                                               | The username to use for HTTP Basic Authentication for the source FHIR server.                         |
 | FHIR_SOURCE_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the source FHIR server.                         |
 | FHIR_SOURCE_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the source FHIR server.                             |
-| FHIR_SOURCE_MAX_QUEUE_SIZE      | 500                                                           | The maximum number FHIR server requests at the source FHIR server to queue before returning an error. |
 | FHIR_SOURCE_PAGE_COUNT          | 1000                                                          | The number of resources per page to request from the source FHIR server.                              |
 | FHIR_SOURCE_BEARER_TOKEN        |                                                               | Bearer token for authentication for the source FHIR server.                                           |
 | FHIR_SOURCE_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the source FHIR server.                             |
@@ -118,7 +117,6 @@ DocumentReference that is configured with the following environment variables:
 | FHIR_REPORT_USER                |                                                               | The username to use for HTTP Basic Authentication for the Report FHIR server.                         |
 | FHIR_REPORT_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the Report FHIR server.                         |
 | FHIR_REPORT_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the Report FHIR server.                             |
-| FHIR_REPORT_MAX_QUEUE_SIZE      | 500                                                           | The maximum number FHIR server requests at the Report FHIR server to queue before returning an error. |
 | FHIR_REPORT_BEARER_TOKEN        |                                                               | Bearer token for authentication for the Report FHIR server.                                           |
 | FHIR_REPORT_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the Report FHIR server.                             |
 | FHIR_REPORT_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the Report FHIR server.      |

@@ -4,7 +4,6 @@ fhir:
     user: ${FHIR_SOURCE_USER:}
     password: ${FHIR_SOURCE_PASSWORD:}
     maxConnections: ${FHIR_SOURCE_MAX_CONNECTIONS:4}
-    maxQueueSize: ${FHIR_SOURCE_MAX_QUEUE_SIZE:500}
     pageCount: ${FHIR_SOURCE_PAGE_COUNT:1000}
     bearerToken: ${FHIR_SOURCE_BEARER_TOKEN:}
     oauth:
@@ -18,7 +17,6 @@ fhir:
     user: ${FHIR_REPORT_USER:}
     password: ${FHIR_REPORT_PASSWORD:}
     maxConnections: ${FHIR_REPORT_MAX_CONNECTIONS:4}
-    maxQueueSize: ${FHIR_REPORT_MAX_QUEUE_SIZE:500}
     bearerToken: ${FHIR_REPORT_BEARER_TOKEN:}
     oauth:
       issuer:
