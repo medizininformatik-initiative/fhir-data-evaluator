@@ -32,3 +32,10 @@ authorIdentifierSystem: ${AUTHOR_IDENTIFIER_SYSTEM:http://dsf.dev/sid/organizati
 authorIdentifierValue: ${AUTHOR_IDENTIFIER_VALUE:}
 projectIdentifierSystem: ${PROJECT_IDENTIFIER_SYSTEM:http://medizininformatik-initiative.de/sid/project-identifier}
 projectIdentifierValue: ${PROJECT_IDENTIFIER_VALUE:}
+logging:
+  level:
+    org.springframework.web.reactive.function.client: info
+    reactor.netty: info
+    reactor: info
+    ca.uhn.fhir.parser: error
+    de.medizininformatikinitiative.fhir_data_evaluator: ${LOG_LEVEL:info}
