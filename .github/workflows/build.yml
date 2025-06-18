@@ -175,6 +175,9 @@ jobs:
       - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server with a Different Project Identifier
         run: .github/integration-test/evaluate-and-post-different-doc-ref.sh ${{ matrix.test }} Test_PROJECT_Evaluation_2
 
+      - name: Run Integration Test for Posting the raw MeasureReport and the obfuscated MeasureReport to the Report FHIR server
+        run: .github/integration-test/evaluate-and-post-report-obfuscated.sh ${{ matrix.test }} Test_Evaluation_Raw Test_Evaluation_Obfuscated
+
       - name: Remove Blaze volumes
         run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml down -v
 
