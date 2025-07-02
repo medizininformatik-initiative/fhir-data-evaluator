@@ -39,8 +39,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.springframework.security.oauth2.core.AuthorizationGrantType.CLIENT_CREDENTIALS;
@@ -197,6 +199,8 @@ class EvaluationExecutor implements CommandLineRunner {
     private String outputDirectory;
     @Value("${sendReportToServer}")
     private boolean sendReportToServer;
+    @Value("${createObfuscatedReport}")
+    private boolean createObfuscatedReport;
     @Value("${authorIdentifierSystem}")
     private String authorIdentifierSystem;
     @Value("${authorIdentifierValue}")
@@ -205,6 +209,10 @@ class EvaluationExecutor implements CommandLineRunner {
     private String projectIdentifierSystem;
     @Value("${projectIdentifierValue}")
     private String projectIdentifierValue;
+    @Value("${projectIdentifierSystemObfuscatedReport}")
+    private String projectIdentifierSystemObfuscated;
+    @Value("${projectIdentifierValueObfuscatedReport}")
+    private String projectIdentifierValueObfuscated;
     @Value("${fhir.report.server}")
     private String reportServer;
     private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
@@ -253,7 +261,7 @@ class EvaluationExecutor implements CommandLineRunner {
         }
     }
 
-    private String getDocRefId() {
+    private String getDocRefId(String projectIdentifierSystem, String projectIdentifierValue) {
         var documentReferences = reportDataStore.getResources(reportServer + "/DocumentReference")
                 .map(r -> (DocumentReference)r.mainResource()).collectList().block();
 
@@ -272,8 +280,8 @@ class EvaluationExecutor implements CommandLineRunner {
         }
     }
 
-    private String createTransactionBundle(String date, String report) {
-        var docRefId = getDocRefId();
+    private String createTransactionBundle(String date, String report, String projectIdentifierSystem, String projectIdentifierValue) {
+        var docRefId = getDocRefId(projectIdentifierSystem, projectIdentifierValue);
 
         JSONObject jo = new JSONObject(getBundleTemplate());
 
@@ -302,6 +310,47 @@ class EvaluationExecutor implements CommandLineRunner {
         return jo.toString();
     }
 
+    private int obfuscateCount(int count) {
+        return count >= 1 && count <= 5 ? 5 : count;
+    }
+
+    private BigDecimal obfuscateCount(BigDecimal count) {
+        return new BigDecimal(String.valueOf(obfuscateCount(count.intValueExact())));
+    }
+
+    private Quantity obfuscateCount(Quantity quantity) {
+        return quantity.copy().setValue(obfuscateCount(quantity.getValue()));
+    }
+
+    private MeasureReport obfuscateReport(MeasureReport r) {
+        MeasureReport obfuscatedReport = r.copy();
+        obfuscatedReport.getGroup().forEach(g -> {
+            g.getPopulation().forEach(gp -> {
+                gp.setCount(obfuscateCount(gp.getCount()));
+                if (g.getMeasureScore().getValue() != null) {
+                    g.setMeasureScore(obfuscateCount(g.getMeasureScore()));
+                }
+            });
+            g.getStratifier().forEach(s -> s.getStratum().forEach(stratum ->{
+                    stratum.getPopulation().forEach(sp -> sp.setCount(obfuscateCount(sp.getCount())));
+                    if (stratum.getMeasureScore().getValue() != null) {
+                        stratum.setMeasureScore(obfuscateCount(stratum.getMeasureScore()));
+                    }
+        }));});
+
+        return obfuscatedReport;
+    }
+
+    private void writeFile(String path, String data) {
+        try {
+            FileWriter fileWriter = new FileWriter(path);
+            fileWriter.write(data);
+            fileWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void run(String... args) {
         String measureFile = getMeasureFile();
         Measure measure = parser.parseResource(Measure.class, measureFile);
@@ -313,30 +362,28 @@ class EvaluationExecutor implements CommandLineRunner {
         measureReport.addExtension(new Extension()
                 .setUrl("http://fhir-evaluator/StructureDefinition/eval-duration")
                 .setValue(durationQuantity.setValue(evaluationDuration)));
+        Optional<MeasureReport> obfuscatedReport = createObfuscatedReport ? Optional.of(obfuscateReport(measureReport)) : Optional.empty();
+
+        String parsedReport = parser.encodeResourceToString(measureReport);
+        Optional<String> parsedObfuscatedReport = obfuscatedReport.map(parser::encodeResourceToString);
 
         String directoryAddition = args[0];
         String dateForBundle = args[1];
-
-        String parsedReport = parser.encodeResourceToString(measureReport);
-
         if(sendReportToServer) {
             logger.info("Uploading MeasureReport to FHIR Report server at {}", reportServer);
-            try {
-                reportDataStore.postReport(createTransactionBundle(dateForBundle, parsedReport))
-                        .doOnSuccess(v -> logger.info("Successfully uploaded MeasureReport to FHIR Report server"))
+            reportDataStore.postReport(createTransactionBundle(dateForBundle, parsedReport, projectIdentifierSystem, projectIdentifierValue))
+                    .doOnSuccess(v -> logger.info("Successfully uploaded MeasureReport to FHIR Report server"))
+                    .block();
+            parsedObfuscatedReport.ifPresent(r -> {
+                reportDataStore.postReport(createTransactionBundle(dateForBundle, r, projectIdentifierSystemObfuscated, projectIdentifierValueObfuscated))
+                        .doOnSuccess(v -> logger.info("Successfully uploaded obfuscated MeasureReport to FHIR Report server"))
                         .block();
-            } catch (RuntimeException e) {
-                logger.error(e.getMessage());
-            }
-
+            });
         } else {
-            try {
-                FileWriter fileWriter = new FileWriter(outputDirectory + directoryAddition + "/measure-report.json");
-                fileWriter.write(parsedReport);
-                fileWriter.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            writeFile(outputDirectory + directoryAddition + "/measure-report.json", parsedReport);
+            parsedObfuscatedReport.ifPresent(r -> {
+                    writeFile(outputDirectory + directoryAddition + "/measure-report-obfuscated.json", r);
+            });
         }
     }
 }

@@ -100,34 +100,56 @@ DocumentReference that is configured with the following environment variables:
 * `PROJECT_IDENTIFIER_SYSTEM` (example: `http://medizininformatik-initiative.de/sid/project-identifier`)
 * `PROJECT_IDENTIFIER_VALUE` (example: `Test_PROJECT_Evaluation`)
 
+### Obfuscation
+By default, a MeasureReport is generated that contains the exact counts of elements found in the FHIRServer.
+If the environment variable `CREATE_OBFUSCATED_REPORT` is set to `true`, an additional obfuscated MeasureReport is generated next to
+the default MeasureReport, where all counts in the report are obfuscated by the following rule:
+```
+if exact_count >= 1 AND exact_count <= 5:
+    obfuscated_count = 5
+else:
+    obfuscated_count = exact_count
+```
+i.e. only numbers from 1 to 4 are rounded to 5. Exact 0 and everything above 5 is not changed.
+
+If `SEND_REPORT_TO_SERVER` is set to true, the raw report and the obfuscated report are both sent to the report server.
+Therefore, the following variables must be additionally set:
+* `PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT`
+* `PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT`
+
+For the author identifier of the obfuscated report, the same identifier is used as for the non-obfuscated report.
+
 ## Environment Variables
 
-| Name                            | Default                                                       | Description                                                                                           |
-|:--------------------------------|:--------------------------------------------------------------|:------------------------------------------------------------------------------------------------------|
-| FHIR_SOURCE_SERVER              | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for downloading the resources.                                 |
-| FHIR_SOURCE_USER                |                                                               | The username to use for HTTP Basic Authentication for the source FHIR server.                         |
-| FHIR_SOURCE_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the source FHIR server.                         |
-| FHIR_SOURCE_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the source FHIR server.                             |
-| FHIR_SOURCE_PAGE_COUNT          | 1000                                                          | The number of resources per page to request from the source FHIR server.                              |
-| FHIR_SOURCE_BEARER_TOKEN        |                                                               | Bearer token for authentication for the source FHIR server.                                           |
-| FHIR_SOURCE_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the source FHIR server.                             |
-| FHIR_SOURCE_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the source FHIR server.      |
-| FHIR_SOURCE_OAUTH_CLIENT_SECRET |                                                               | The client secret to use for authentication with OpenID Connect provider for the source FHIR server.  |
-| FHIR_REPORT_SERVER              | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for (optionally) uploading the MeasureReport.                  |
-| FHIR_REPORT_USER                |                                                               | The username to use for HTTP Basic Authentication for the Report FHIR server.                         |
-| FHIR_REPORT_PASSWORD            |                                                               | The password to use for HTTP Basic Authentication for the Report FHIR server.                         |
-| FHIR_REPORT_MAX_CONNECTIONS     | 4                                                             | The maximum number of connections to open towards the Report FHIR server.                             |
-| FHIR_REPORT_BEARER_TOKEN        |                                                               | Bearer token for authentication for the Report FHIR server.                                           |
-| FHIR_REPORT_OAUTH_ISSUER_URI    |                                                               | The issuer URI of the OpenID Connect provider for the Report FHIR server.                             |
-| FHIR_REPORT_OAUTH_CLIENT_ID     |                                                               | The client ID to use for authentication with OpenID Connect provider for the Report FHIR server.      |
-| FHIR_REPORT_OAUTH_CLIENT_SECRET |                                                               | The client secret to use for authentication with OpenID Connect provider for the Report FHIR server.  |
-| MAX_IN_MEMORY_SIZE_MIB          | 10                                                            | The maximum in-memory buffer size for each webclient in MiB.                                          |
-| TZ                              | Europe/Berlin                                                 | The time zone used to create the output directory and set the date in the DocumentReference.          |
-| SEND_REPORT_TO_SERVER           | false                                                         | Whether the MeasureReport should be sent to the FHIR Report server.                                   |
-| AUTHOR_IDENTIFIER_SYSTEM        | http://dsf.dev/sid/organization-identifier                    | The system of the author organization used when uploading the report.                                 |
-| AUTHOR_IDENTIFIER_VALUE         |                                                               | The code of the author organization used when uploading the report.                                   |
-| PROJECT_IDENTIFIER_SYSTEM       | http://medizininformatik-initiative.de/sid/project-identifier | The system of the master identifier used when uploading the report.                                   |
-| PROJECT_IDENTIFIER_VALUE        |                                                               | The value of the master identifier used when uploading the report.                                    |
+| Name                                        | Default                                                       | Description                                                                                          |
+|:--------------------------------------------|:--------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|
+| FHIR_SOURCE_SERVER                          | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for downloading the resources.                                |
+| FHIR_SOURCE_USER                            |                                                               | The username to use for HTTP Basic Authentication for the source FHIR server.                        |
+| FHIR_SOURCE_PASSWORD                        |                                                               | The password to use for HTTP Basic Authentication for the source FHIR server.                        |
+| FHIR_SOURCE_MAX_CONNECTIONS                 | 4                                                             | The maximum number of connections to open towards the source FHIR server.                            |
+| FHIR_SOURCE_PAGE_COUNT                      | 1000                                                          | The number of resources per page to request from the source FHIR server.                             |
+| FHIR_SOURCE_BEARER_TOKEN                    |                                                               | Bearer token for authentication for the source FHIR server.                                          |
+| FHIR_SOURCE_OAUTH_ISSUER_URI                |                                                               | The issuer URI of the OpenID Connect provider for the source FHIR server.                            |
+| FHIR_SOURCE_OAUTH_CLIENT_ID                 |                                                               | The client ID to use for authentication with OpenID Connect provider for the source FHIR server.     |
+| FHIR_SOURCE_OAUTH_CLIENT_SECRET             |                                                               | The client secret to use for authentication with OpenID Connect provider for the source FHIR server. |
+| FHIR_REPORT_SERVER                          | http://localhost:8080/fhir                                    | The base URL of the FHIR server to use for (optionally) uploading the MeasureReport.                 |
+| FHIR_REPORT_USER                            |                                                               | The username to use for HTTP Basic Authentication for the Report FHIR server.                        |
+| FHIR_REPORT_PASSWORD                        |                                                               | The password to use for HTTP Basic Authentication for the Report FHIR server.                        |
+| FHIR_REPORT_MAX_CONNECTIONS                 | 4                                                             | The maximum number of connections to open towards the Report FHIR server.                            |
+| FHIR_REPORT_BEARER_TOKEN                    |                                                               | Bearer token for authentication for the Report FHIR server.                                          |
+| FHIR_REPORT_OAUTH_ISSUER_URI                |                                                               | The issuer URI of the OpenID Connect provider for the Report FHIR server.                            |
+| FHIR_REPORT_OAUTH_CLIENT_ID                 |                                                               | The client ID to use for authentication with OpenID Connect provider for the Report FHIR server.     |
+| FHIR_REPORT_OAUTH_CLIENT_SECRET             |                                                               | The client secret to use for authentication with OpenID Connect provider for the Report FHIR server. |
+| MAX_IN_MEMORY_SIZE_MIB                      | 10                                                            | The maximum in-memory buffer size for each webclient in MiB.                                         |
+| TZ                                          | Europe/Berlin                                                 | The time zone used to create the output directory and set the date in the DocumentReference.         |
+| SEND_REPORT_TO_SERVER                       | false                                                         | Whether the MeasureReport should be sent to the FHIR Report server.                                  |
+| CREATE_OBFUSCATED_REPORT                    | false                                                         | Whether an obfuscated MeasureReport should be created in addition.                                   |
+| AUTHOR_IDENTIFIER_SYSTEM                    | http://dsf.dev/sid/organization-identifier                    | The system of the author organization used when uploading the report.                                |
+| AUTHOR_IDENTIFIER_VALUE                     |                                                               | The code of the author organization used when uploading the report.                                  |
+| PROJECT_IDENTIFIER_SYSTEM                   | http://medizininformatik-initiative.de/sid/project-identifier | The system of the master identifier used when uploading the report.                                  |
+| PROJECT_IDENTIFIER_VALUE                    |                                                               | The value of the master identifier used when uploading the report.                                   |
+| PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT | http://medizininformatik-initiative.de/sid/project-identifier | The system of the master identifier used when uploading the obfuscated report.                       |
+| PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT  |                                                               | The value of the master identifier used when uploading the obfuscated report.                        |
 
 
 ## Documentation
