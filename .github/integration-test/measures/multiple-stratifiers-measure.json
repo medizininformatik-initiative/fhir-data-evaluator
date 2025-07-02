@@ -27,7 +27,7 @@
           },
           "criteria": {
             "language": "text/x-fhir-query",
-            "expression": "Condition?_profile=https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+            "expression": "Observation"
           },
           "id": "initial-population-identifier-1"
         },
@@ -42,7 +42,7 @@
           },
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition"
+            "expression": "Observation"
           },
           "id": "measure-population-identifier-1"
         },
@@ -57,7 +57,7 @@
           },
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.subject.reference"
+            "expression": "Observation.subject.reference"
           },
           "extension": [
             {
@@ -76,13 +76,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://fhir.de/CodeSystem/bfarm/icd-10-gm')"
+            "expression": "Observation.code.coding.where(system='http://loinc.org')"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "condition-icd10-code"
+                "code": "observation-loinc-code"
               }
             ]
           },
@@ -91,13 +91,13 @@
         {
           "criteria": {
             "language": "text/fhirpath",
-            "expression": "Condition.code.coding.where(system='http://snomed.info/sct')"
+            "expression": "Observation.code.coding.where(system='http://snomed.info/sct')"
           },
           "code": {
             "coding": [
               {
                 "system": "http://fhir-evaluator/strat/system",
-                "code": "condition-sct-code"
+                "code": "observation-sct-code"
               }
             ]
           },

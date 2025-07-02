@@ -191,7 +191,7 @@ jobs:
         run: .github/integration-test/test-data/get-mii-testdata.sh
 
       - name: Upload New Data
-        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/Vorhofflimmern
+        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/mii-testdata
 
       - name: Run Integration Test multiple stratifiers
         run: .github/integration-test/evaluate-multiple-stratifiers.sh ${{ matrix.test }}
