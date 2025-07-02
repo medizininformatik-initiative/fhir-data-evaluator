@@ -4,6 +4,9 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.fhirpath.IFhirPath;
 import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.Bundle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -27,6 +30,8 @@ public class DataStore {
     private final FhirContext context;
     private final IFhirPath applicationFhirPathEngine;
 
+    private final Logger logger = LoggerFactory.getLogger(DataStore.class);
+
     public DataStore(WebClient webClient, IParser parser, int pageCount, FhirContext context, IFhirPath fhirPathEngine) {
         this.webClient = webClient;
         this.parser = parser;
@@ -46,6 +51,7 @@ public class DataStore {
                 .uri(appendPageCount(query))
                 .retrieve()
                 .bodyToFlux(String.class)
+                .doOnNext(response -> logger.debug("Initial query success: {}", appendPageCount(query)))
                 .map(response -> parser.parseResource(Bundle.class, response))
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
                         .map(link -> fetchPage(webClient, link.getUrl()))
@@ -87,6 +93,7 @@ public class DataStore {
                 .uri(URI.create(url))
                 .retrieve()
                 .bodyToMono(String.class)
+                .doOnNext(response -> logger.trace("Fetch page success: {}", url))
                 .map(response -> parser.parseResource(Bundle.class, response));
     }
 

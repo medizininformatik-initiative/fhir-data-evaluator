@@ -4,7 +4,6 @@ fhir:
     user: ${FHIR_SOURCE_USER:}
     password: ${FHIR_SOURCE_PASSWORD:}
     maxConnections: ${FHIR_SOURCE_MAX_CONNECTIONS:4}
-    maxQueueSize: ${FHIR_SOURCE_MAX_QUEUE_SIZE:500}
     pageCount: ${FHIR_SOURCE_PAGE_COUNT:1000}
     bearerToken: ${FHIR_SOURCE_BEARER_TOKEN:}
     oauth:
@@ -18,7 +17,6 @@ fhir:
     user: ${FHIR_REPORT_USER:}
     password: ${FHIR_REPORT_PASSWORD:}
     maxConnections: ${FHIR_REPORT_MAX_CONNECTIONS:4}
-    maxQueueSize: ${FHIR_REPORT_MAX_QUEUE_SIZE:500}
     bearerToken: ${FHIR_REPORT_BEARER_TOKEN:}
     oauth:
       issuer:
@@ -30,7 +28,17 @@ maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}
 sendReportToServer: ${SEND_REPORT_TO_SERVER:false}
+createObfuscatedReport : ${CREATE_OBFUSCATED_REPORT:false}
 authorIdentifierSystem: ${AUTHOR_IDENTIFIER_SYSTEM:http://dsf.dev/sid/organization-identifier}
 authorIdentifierValue: ${AUTHOR_IDENTIFIER_VALUE:}
 projectIdentifierSystem: ${PROJECT_IDENTIFIER_SYSTEM:http://medizininformatik-initiative.de/sid/project-identifier}
 projectIdentifierValue: ${PROJECT_IDENTIFIER_VALUE:}
+projectIdentifierSystemObfuscatedReport: ${PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT:http://medizininformatik-initiative.de/sid/project-identifier}
+projectIdentifierValueObfuscatedReport: ${PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT:}
+logging:
+  level:
+    org.springframework.web.reactive.function.client: info
+    reactor.netty: info
+    reactor: info
+    ca.uhn.fhir.parser: error
+    de.medizininformatikinitiative.fhir_data_evaluator: ${LOG_LEVEL:info}

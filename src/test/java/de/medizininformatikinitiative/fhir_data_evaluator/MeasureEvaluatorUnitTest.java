@@ -49,7 +49,7 @@ public class MeasureEvaluatorUnitTest {
     @BeforeEach
     void setUp() {
         pathEngine = createPathEngine();
-        measureEvaluator = new MeasureEvaluator(dataStore, pathEngine);
+        measureEvaluator = new MeasureEvaluator(dataStore, pathEngine, 4);
     }
 
     private void assertCodeableConcept(CodeableConcept was, String expectedSystem, String expectedCode) {
