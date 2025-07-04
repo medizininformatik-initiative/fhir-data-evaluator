@@ -265,9 +265,10 @@ class EvaluationExecutor implements CommandLineRunner {
         var documentReferences = reportDataStore.getResources(reportServer + "/DocumentReference")
                 .map(r -> (DocumentReference)r.mainResource()).collectList().block();
 
-        var refsWithSameProjId = documentReferences.stream().filter(r ->
-                        r.getMasterIdentifier().getSystem().equals(projectIdentifierSystem) &&
-                        r.getMasterIdentifier().getValue().equals(projectIdentifierValue)).toList();
+        var refsWithSameProjId = documentReferences.stream()
+                .filter(r -> r.getMasterIdentifier() != null
+                        && projectIdentifierSystem.equals(r.getMasterIdentifier().getSystem())
+                        && projectIdentifierValue.equals(r.getMasterIdentifier().getValue())).toList();
 
         if (refsWithSameProjId.size() > 1) {
             throw new RuntimeException(String.format("Multiple DocumentReferences exist for masterIdentifier " +
