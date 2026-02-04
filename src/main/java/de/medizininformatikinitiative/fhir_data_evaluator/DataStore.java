@@ -51,7 +51,10 @@ public class DataStore {
                 .uri(appendPageCount(query))
                 .retrieve()
                 .bodyToFlux(String.class)
-                .doOnNext(response -> logger.debug("Initial query success: {}", appendPageCount(query)))
+                .doOnNext(response -> {
+                    logger.debug("Initial query success: {}", appendPageCount(query));
+                    logger.trace("Response: {}", response);
+                })
                 .map(response -> parser.parseResource(Bundle.class, response))
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
                         .map(link -> fetchPage(webClient, link.getUrl()))
