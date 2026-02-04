@@ -50,7 +50,7 @@ public class DataStore {
         return webClient.get()
                 .uri(appendPageCount(query))
                 .retrieve()
-                .bodyToFlux(String.class)
+                .bodyToMono(String.class)
                 .doOnNext(response -> logger.debug("Initial query success: {}", appendPageCount(query)))
                 .map(response -> parser.parseResource(Bundle.class, response))
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
