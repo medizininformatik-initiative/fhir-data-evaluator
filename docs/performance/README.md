@@ -5,7 +5,7 @@ To generate test data, for example this [synthea test data generator](https://gi
 
 ## Run Test
 ```sh
-sh Documentation/performance/average-time-test.sh <measure.json> <output/dir> <iterations> <docker-image>
+sh docs/performance/average-time-test.sh <measure.json> <output/dir> <iterations> <docker-image>
 ```
 This test will run the Fhir Data Evaluator multiple times, save the MeasureReports to the output directory and read the
 evaluation time from an extension in the MeasureReports to calculate the average and standard deviation. If the test script is run a second time, it will remove the old MeasureReports.
@@ -33,5 +33,5 @@ docker build -f ./docker/Dockerfile -t fhir-data-evaluator .
 ```
 * Run Test with custom image:
 ```sh
-sh Documentation/performance/average-time-test.sh ${PWD}/Documentation/example-measures/example-measure-2.json ${PWD}/target/performance-output 2 fhir-data-evaluator
+sh docs/performance/average-time-test.sh ${PWD}/docs/example-measures/example-measure-2.json ${PWD}/target/performance-output 2 fhir-data-evaluator
 ```

@@ -34,6 +34,6 @@ services:
       - "auth.localhost:host-gateway"
       - "localhost:host-gateway"
     volumes:
-    - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
+    - "${FDE_INPUT_MEASURE:-../docs/example-measures/example-measure-kds.json}:/app/measure.json"
     - "${FDE_OUTPUT_DIR:-../output}:/app/output"
     - ../certs:/app/certs

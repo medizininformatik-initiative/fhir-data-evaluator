@@ -36,4 +36,4 @@ output
 
 docker/.env
 certs
-Documentation/example-measures/fdpg_availability_measure_v3.5.0.json
+docs/example-measures/fdpg_availability_measure_v3.5.0.json
