@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-      - develop
     tags:
       - '*.*.*'
   pull_request:
     branches:
       - main
-      - develop
 
 jobs:
   fhir-data-evaluator-ig:
