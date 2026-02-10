@@ -35,7 +35,7 @@ jobs:
         run: make validate
 
       - name: Validate Documentation Measures
-        run: make validate -C shorthand/FhirDataEvaluatorIG RESOURCES_PATH="${GITHUB_WORKSPACE}/Documentation/example-measures/example-measure-*.json"
+        run: make validate -C shorthand/FhirDataEvaluatorIG RESOURCES_PATH="${GITHUB_WORKSPACE}/docs/example-measures/example-measure-*.json"
 
       - name: Upload Generated Measures for Integration Test
         uses: actions/upload-artifact@v4

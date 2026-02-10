@@ -87,5 +87,6 @@ The resources to validate a measure can be built with [SUSHI](https://github.com
 into `shorthand/FhirDataEvaluatorIG` and run `sushi build`. The resulting resources will be saved at 
 `shorthand/FhirDataEvaluatorIG/fhs-generated/resources` and can be used for example with the 
 [FHIR Validator](https://confluence.hl7.org/display/FHIR/Using+the+FHIR+Validator). This also generates the measures that
-are used in the [integration test](../src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures)
-and they are copied into the test resources directory during the maven build process.
+are used in the integration test, and they are copied into the test resources directory
+at `src/test/resources/de/medizininformatikinitiative/fhir_data_evaluator/FhirDataEvaluatorTest/Measures`
+during the maven build process.

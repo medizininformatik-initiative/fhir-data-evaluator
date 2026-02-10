@@ -24,7 +24,7 @@ services:
       PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT:-}
       CREATE_OBFUSCATED_REPORT: ${FDE_CREATE_OBFUSCATED_REPORT:-false}
     volumes:
-      - "${FDE_INPUT_MEASURE:-../Documentation/example-measures/example-measure-kds.json}:/app/measure.json"
+      - "${FDE_INPUT_MEASURE:-../docs/example-measures/example-measure-kds.json}:/app/measure.json"
       - "${FDE_OUTPUT_DIR:-../output}:/app/output"
   curl-tester: # dummy container from which curl can request data within the same network as the other containers
     build: .
