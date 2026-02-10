@@ -13,6 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 ### Security
 
+## [1.3.2] - 2026-02-10
+
+### Changed
+- Update Documentation
+
+### Fixed
+- Make compatible with HAPI fhir server return
+
 ## [1.3.1] - 2025-07-04
 
 ### Fixed
