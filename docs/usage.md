@@ -7,7 +7,7 @@ The resulting MeasureReport can either be viewed as file, or automatically be up
 
 Minimal example to run the Fhir Data Evaluator:
 ```sh
-docker run -v <your/measurefile.json>:/app/measure.json -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.1
+docker run -v <your/measurefile.json>:/app/measure.json -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.2
 ```
 
 ### Using the CSV-Converter:

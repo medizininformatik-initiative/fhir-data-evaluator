@@ -2,7 +2,7 @@
 
 ### MeasureReport as File only:
 ```sh
-docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.1
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.2
 ```
 This generates a MeasureReport that is stored in a directory named after the current date combined with the Measure's
 name inside `/app/output`. In order to see the MeasureReport, one can for example mount a volume to `/app/output/` like
@@ -21,7 +21,7 @@ DocumentReference that is configured with the following environment variables:
 ### Usage with Docker Networks
 To any of the listed "docker run" commands add ```--network <your_network>``` to run the container inside a Docker network:
 ```sh
-docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin --network <your_network> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.1
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e TZ=Europe/Berlin --network <your_network> -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.2
 ```
 
 ### Resolving References
@@ -47,7 +47,7 @@ If the environment variables are set only on the host machine, they won't be vis
 Any environment variable can be passed to the container using the `-e` flag.
 * Example of passing a page count of 50:
 ```sh
-docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e FHIR_SOURCE_PAGE_COUNT=50 -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.1
+docker run -v <your/measurefile.json>:/app/measure.json -v <your/output/dir>:/app/output -e FHIR_SOURCE_SERVER=<http://your-fhir-server/fhir> -e FHIR_SOURCE_PAGE_COUNT=50 -e TZ=Europe/Berlin -it ghcr.io/medizininformatik-initiative/fhir-data-evaluator:1.3.2
 ```
 
 ### Obfuscation
