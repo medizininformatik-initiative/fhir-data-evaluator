@@ -11,5 +11,7 @@ into the new image, say `ghcr.io/medizininformatik-initiative/fhir-data-evaluato
 * create a PR from the release branch into main
 * merge that PR
 * create and push a tag called `v<version>` like `v0.1.1` on main at the merge commit
+* create a branch called `prepare-snapshot` based on the updated main branch
 * change the version in the POM to the next SNAPSHOT version which usually increments the minor version
+* create a commit with the title `Prepare Snapshot`, push, create a PR and merge into main
 * create release notes on GitHub
