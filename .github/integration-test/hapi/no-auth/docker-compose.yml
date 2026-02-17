@@ -1,0 +1,35 @@
+services:
+  fhir-server:
+    image: "hapiproject/hapi:latest"
+    environment:
+      BASE_URL: "http://fhir-server:8080"
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+      LOG_LEVEL: "debug"
+      hapi.fhir.enforce_referential_integrity_on_write: false
+    ports:
+      - "8082:8080"
+    volumes:
+      - "data-store-data:/app/data"
+  fhir-data-evaluator:
+    image: fhir-data-evaluator
+    environment:
+      FHIR_SOURCE_SERVER: "http://fhir-server:8080/fhir"
+      FHIR_REPORT_SERVER: "http://fhir-server:8080/fhir"
+      SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
+      AUTHOR_IDENTIFIER_SYSTEM: ${FDE_AUTHOR_IDENTIFIER_SYSTEM:-}
+      AUTHOR_IDENTIFIER_VALUE: ${FDE_AUTHOR_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM: ${FDE_PROJECT_IDENTIFIER_SYSTEM:-}
+      PROJECT_IDENTIFIER_VALUE: ${FDE_PROJECT_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT:-}
+      PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT:-}
+      CREATE_OBFUSCATED_REPORT: ${FDE_CREATE_OBFUSCATED_REPORT:-false}
+    volumes:
+      - "${FDE_INPUT_MEASURE:-../docs/example-measures/example-measure-kds.json}:/app/measure.json"
+      - "${FDE_OUTPUT_DIR:-../output}:/app/output"
+  curl-tester: # dummy container from which curl can request data within the same network as the other containers
+    build: .
+    entrypoint: ["tail", "-f", "/dev/null"]
+    command: ""
+
+volumes:
+  data-store-data:

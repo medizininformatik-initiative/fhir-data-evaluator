@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-AUTH="$1"
+AUTH="$3"
 DOCKER_COMPOSE_FILE=.github/integration-test/"$1"/docker-compose.yml
 PROJECT_IDENTIFIER_VALUE="$2"
 export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/icd10-measure.json
@@ -11,7 +11,17 @@ export FDE_PROJECT_IDENTIFIER_SYSTEM=http://medizininformatik-initiative.de/sid/
 export FDE_PROJECT_IDENTIFIER_VALUE="$PROJECT_IDENTIFIER_VALUE"
 export FDE_SEND_REPORT_TO_SERVER=true
 
+if [[ "$1" == *"hapi"* ]]; then
+  # Hapi might need some time until the previously created resources are available (the FDE fetches them to get the ID
+  # of the previous document reference)
+  sleep 60
+fi
+
 docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-data-evaluator
+
+if [[ "$1" == *"hapi"* ]]; then
+  sleep 60 # hapi might need some time until the newly updated resources are available
+fi
 
 get_response() {
   URL="$1"

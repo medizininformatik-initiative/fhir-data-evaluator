@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-AUTH="$1"
+AUTH="$4"
 DOCKER_COMPOSE_FILE=.github/integration-test/"$1"/docker-compose.yml
 PROJECT_IDENTIFIER_VALUE="$2"
 PROJECT_IDENTIFIER_VALUE_OBFUSCATED="$3"
@@ -16,7 +16,18 @@ export FDE_SEND_REPORT_TO_SERVER=true
 export FDE_CREATE_OBFUSCATED_REPORT=true
 
 mkdir "$FDE_OUTPUT_DIR"
+
+if [[ "$1" == *"hapi"* ]]; then
+  # Hapi might need some time until the previously created resources are available (the FDE fetches them to get the ID
+  # of the previous document reference)
+  sleep 60
+fi
+
 docker compose -f "$DOCKER_COMPOSE_FILE" run -e TZ="$(cat /etc/timezone)" fhir-data-evaluator
+
+if [[ "$1" == *"hapi"* ]]; then
+  sleep 60 # hapi might need some time until the newly updated resources are available
+fi
 
 get_response() {
   URL="$1"

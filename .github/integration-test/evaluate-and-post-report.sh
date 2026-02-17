@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-AUTH="$1"
+AUTH="$3"
 DOCKER_COMPOSE_FILE=.github/integration-test/"$1"/docker-compose.yml
 PROJECT_IDENTIFIER_VALUE="$2"
 export FDE_INPUT_MEASURE=/${PWD}/.github/integration-test/measures/icd10-measure.json
