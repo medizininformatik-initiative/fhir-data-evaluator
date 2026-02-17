@@ -3266,10 +3266,6 @@
               "display": "Hemoglobin [Mass/volume] in Blood"
             }
           ]
-        },
-        "request": {
-          "method": "POST",
-          "url": "Observation/18c097fd-4263-8f4e-4307-f21ed5b01bcd"
         }
       },
       "request": {
