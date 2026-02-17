@@ -298,8 +298,8 @@ class EvaluationExecutor implements CommandLineRunner {
 
         jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource").put("date", date);
 
-        var docRefUrl = "urn::uuid:" + UUID.randomUUID();
-        var reportUrl = "urn::uuid:" + UUID.randomUUID();
+        var docRefUrl = "urn:uuid:" + UUID.randomUUID();
+        var reportUrl = "urn:uuid:" + UUID.randomUUID();
         jo.getJSONArray("entry").getJSONObject(0).getJSONObject("resource").getJSONArray("content")
                 .getJSONObject(0).getJSONObject("attachment").put("url", reportUrl);
         jo.getJSONArray("entry").getJSONObject(0).put("fullUrl", docRefUrl);
