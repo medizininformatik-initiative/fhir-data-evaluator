@@ -92,6 +92,7 @@ jobs:
     needs: build
     strategy:
       matrix:
+        server: [blaze, hapi]
         test:
           - no-auth
           - basic-auth
@@ -117,82 +118,82 @@ jobs:
       - name: Load FhirDataEvaluator Image
         run: docker load --input /tmp/fhir-data-evaluator.tar
 
-      - name: Run Blaze and Proxy
-        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml up -d --wait --wait-timeout 300 --scale fhir-data-evaluator=0
+      - name: Run Server and Proxy
+        run: docker compose -f .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/docker-compose.yml up -d --wait --wait-timeout 600 --scale fhir-data-evaluator=0
 
-      - name: Wait for Blaze
-        run: .github/scripts/wait-for-url.sh http://localhost:8082/health
+      - name: Wait for Server
+        run: .github/scripts/wait-for-url.sh http://localhost:8082/fhir/metadata
 
       - name: Load Data
-        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/test-data
+        run: .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/load-data.sh .github/integration-test/test-data ${{ matrix.server }}
 
       - name: Run Integration Test for ICD10
-        run: .github/integration-test/evaluate-icd10.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-icd10.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for ICD10 to CSV
-        run: .github/integration-test/evaluate-icd10-to-csv.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-icd10-to-csv.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for ICD10 with Status to CSV
-        run: .github/integration-test/evaluate-icd10WithStatus-to-csv.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-icd10WithStatus-to-csv.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for type code
-        run: .github/integration-test/evaluate-code.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-code.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for type boolean
-        run: .github/integration-test/evaluate-exists.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-exists.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count
-        run: .github/integration-test/evaluate-unique-count.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-unique-count.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count with CSV
-        run: .github/integration-test/evaluate-unique-count-to-csv.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-unique-count-to-csv.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for Unique Count with Components and with CSV
-        run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-unique-count-with-components-to-csv.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test for Reference Resolve
-        run: .github/integration-test/evaluate-reference-resolve.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-reference-resolve.sh ${{ matrix.server }}/${{ matrix.test }}
 
       - name: Run Integration Test to check if it correctly exits when there are insufficient writing permissions
         run: .github/integration-test/missing-permissions-test.sh
 
       - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server
-        run: .github/integration-test/evaluate-and-post-report.sh ${{ matrix.test }} Test_PROJECT_Evaluation_1
+        run: .github/integration-test/evaluate-and-post-report.sh ${{ matrix.server }}/${{ matrix.test }} Test_PROJECT_Evaluation_1 ${{ matrix.test }}
 
       - name: Run Integration Test using the CSV-Converter with a URL as input
         run: |
           # This test must run inside the Docker network to be able to access the services with curl
-          export CURL_TESTER_ID=$(docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml ps -q curl-tester)
+          export CURL_TESTER_ID=$(docker compose -f .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/docker-compose.yml ps -q curl-tester)
           docker cp .github/integration-test/csv-from-url.sh $CURL_TESTER_ID:/app/csv-from-url.sh
           docker cp ./csv-converter.sh $CURL_TESTER_ID:/app/csv-converter.sh
           docker exec $CURL_TESTER_ID sh -c ". /app/csv-from-url.sh ${{ matrix.test }}"
 
       - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server with the Same Project Identifier
-        run: .github/integration-test/evaluate-and-post-update.sh ${{ matrix.test }} Test_PROJECT_Evaluation_1
+        run: .github/integration-test/evaluate-and-post-update.sh ${{ matrix.server }}/${{ matrix.test }} Test_PROJECT_Evaluation_1 ${{ matrix.test }}
 
       - name: Run Integration Test for Posting the MeasureReport to the Report FHIR server with a Different Project Identifier
-        run: .github/integration-test/evaluate-and-post-different-doc-ref.sh ${{ matrix.test }} Test_PROJECT_Evaluation_2
+        run: .github/integration-test/evaluate-and-post-different-doc-ref.sh ${{ matrix.server }}/${{ matrix.test }} Test_PROJECT_Evaluation_2 ${{ matrix.test }}
 
       - name: Run Integration Test for Posting the raw MeasureReport and the obfuscated MeasureReport to the Report FHIR server
-        run: .github/integration-test/evaluate-and-post-report-obfuscated.sh ${{ matrix.test }} Test_Evaluation_Raw Test_Evaluation_Obfuscated
+        run: .github/integration-test/evaluate-and-post-report-obfuscated.sh ${{ matrix.server }}/${{ matrix.test }} Test_Evaluation_Raw Test_Evaluation_Obfuscated ${{ matrix.test }}
 
-      - name: Remove Blaze volumes
-        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml down -v
+      - name: Remove Server volumes
+        run: docker compose -f .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/docker-compose.yml down -v
 
-      - name: Run Blaze with fresh volumes
-        run: docker compose -f .github/integration-test/${{ matrix.test }}/docker-compose.yml up -d
+      - name: Run Server with fresh volumes
+        run: docker compose -f .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/docker-compose.yml up -d
 
-      - name: Wait for Blaze
-        run: .github/scripts/wait-for-url.sh http://localhost:8082/health
+      - name: Wait for Server
+        run: .github/scripts/wait-for-url.sh http://localhost:8082/fhir/metadata
 
       - name: Download New Data
         run: .github/integration-test/test-data/get-mii-testdata.sh
 
       - name: Upload New Data
-        run: .github/integration-test/${{ matrix.test }}/load-data.sh .github/integration-test/mii-testdata
+        run: .github/integration-test/${{ matrix.server }}/${{ matrix.test }}/load-data.sh .github/integration-test/mii-testdata ${{ matrix.server }}
 
       - name: Run Integration Test multiple stratifiers
-        run: .github/integration-test/evaluate-multiple-stratifiers.sh ${{ matrix.test }}
+        run: .github/integration-test/evaluate-multiple-stratifiers.sh ${{ matrix.server }}/${{ matrix.test }}
 
   push-image:
     needs:

@@ -1,0 +1,143 @@
+services:
+  generate-cert:
+    image: alpine/openssl
+    networks:
+      test-oauth:
+    entrypoint: ["sh", "-c"]
+    command:
+      - openssl req -nodes -subj "/CN=proxy"
+        -addext "basicConstraints=CA:false"
+        -addext "subjectAltName = DNS:secure-fhir-server, DNS:secure-keycloak"
+        -x509 -newkey rsa:4096 -days 99999
+        -keyout /keys/key.pem -out /certs/cert.pem
+    volumes:
+      - "certs:/certs"
+      - "keys:/keys"
+  generate-trust-store:
+    image: eclipse-temurin:21
+    networks:
+      test-oauth:
+    entrypoint: ["bash", "-c"]
+    command:
+      - rm -rf "/trusts/trust-store.p12";
+        keytool -importcert -storetype PKCS12 -keystore "/trusts/trust-store.p12"
+        -storepass "insecure" -alias ca -file "/certs/cert.pem" -noprompt
+    volumes:
+      - "certs:/certs"
+      - "trusts:/trusts"
+    depends_on:
+      generate-cert:
+        condition: service_completed_successfully
+  keycloak:
+    image: "keycloak/keycloak:24.0.5"
+    command: ["start", "--import-realm"]
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: "5s"
+      timeout: "5s"
+      retries: "3"
+      start_period: "30s"
+    networks:
+      test-oauth:
+    environment:
+      KC_HOSTNAME_URL: "https://secure-keycloak:8443"
+      KC_HOSTNAME_ADMIN_URL: "https://secure-keycloak:8443"
+      KC_HTTP_RELATIVE_PATH: "/"
+      KC_PROXY_HEADERS: "xforwarded"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: "info"
+    volumes:
+      - "./realm-test.json:/opt/keycloak/data/import/realm-test.json"
+  proxy:
+    image: "nginx:1.27.0"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail -s http://localhost:8080"]
+      interval: "5s"
+      timeout: "5s"
+      retries: "3"
+      start_period: "5s"
+    networks:
+      test-oauth:
+        aliases:
+          - secure-fhir-server
+          - secure-keycloak
+    volumes:
+      - "./nginx.conf:/etc/nginx/nginx.conf"
+      - "certs:/etc/nginx/certs"
+      - "keys:/etc/nginx/keys"
+    depends_on:
+      generate-cert:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+  fhir-server:
+    image: "hapiproject/hapi:latest"
+    networks:
+      test-oauth:
+    environment:
+      BASE_URL: "https://fhir-server:8080"
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+      OPENID_PROVIDER_URL: "https://secure-keycloak:8443/realms/test"
+      OPENID_CLIENT_TRUST_STORE: "/trusts/trust-store.p12"
+      OPENID_CLIENT_TRUST_STORE_PASS: "insecure"
+      LOG_LEVEL: "debug"
+      hapi.fhir.enforce_referential_integrity_on_write: false
+    ports:
+      - "8082:8080"
+    volumes:
+      - "data-store-data:/app/data"
+      - "trusts:/trusts"
+    depends_on:
+      generate-trust-store:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+  fhir-data-evaluator:
+    image: fhir-data-evaluator
+    networks:
+      test-oauth:
+    environment:
+      FHIR_SOURCE_SERVER: "https://secure-fhir-server:8443/fhir"
+      FHIR_SOURCE_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
+      FHIR_SOURCE_OAUTH_CLIENT_ID: "account"
+      FHIR_SOURCE_OAUTH_CLIENT_SECRET: "test"
+      FHIR_REPORT_SERVER: "https://secure-fhir-server:8443/fhir"
+      FHIR_REPORT_OAUTH_ISSUER_URI: "https://secure-keycloak:8443/realms/test"
+      FHIR_REPORT_OAUTH_CLIENT_ID: "account"
+      FHIR_REPORT_OAUTH_CLIENT_SECRET: "test"
+      SEND_REPORT_TO_SERVER: ${FDE_SEND_REPORT_TO_SERVER:-false}
+      AUTHOR_IDENTIFIER_SYSTEM: ${FDE_AUTHOR_IDENTIFIER_SYSTEM:-}
+      AUTHOR_IDENTIFIER_VALUE: ${FDE_AUTHOR_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM: ${FDE_PROJECT_IDENTIFIER_SYSTEM:-}
+      PROJECT_IDENTIFIER_VALUE: ${FDE_PROJECT_IDENTIFIER_VALUE:-}
+      PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT:-}
+      PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT:-}
+      CREATE_OBFUSCATED_REPORT: ${FDE_CREATE_OBFUSCATED_REPORT:-false}
+    volumes:
+      - "${FDE_INPUT_MEASURE:-../docs/example-measures/example-measure-kds.json}:/app/measure.json"
+      - "${FDE_OUTPUT_DIR:-../output}:/app/output"
+      - "certs:/app/certs"
+  curl-tester: # dummy container from which curl can request data within the same network as the other containers
+    build: .
+    entrypoint: [ "tail", "-f", "/dev/null" ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://fhir-server:8080/fhir/metadata"] # hapi does not have curl -> exploit curl tester as healthcheck for hapi
+      interval: "5s"
+      timeout: "5s"
+      retries: "20"
+      start_period: "60s"
+    command: ""
+    networks:
+      test-oauth:
+    volumes:
+      - "certs:/app/certs"
+volumes:
+  data-store-data:
+  certs:
+  keys:
+  trusts:
+networks:
+  test-oauth:
