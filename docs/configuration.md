@@ -55,12 +55,12 @@ By default, a MeasureReport is generated that contains the exact counts of eleme
 If the environment variable `CREATE_OBFUSCATED_REPORT` is set to `true`, an additional obfuscated MeasureReport is generated next to
 the default MeasureReport, where all counts in the report are obfuscated by the following rule:
 ```
-if exact_count >= 1 AND exact_count <= 5:
-    obfuscated_count = 5
+if exact_count >= 1 AND exact_count <= OBFUSCATION_COUNT:
+    obfuscated_count = OBFUSCATION_COUNT
 else:
     obfuscated_count = exact_count
 ```
-i.e. only numbers from 1 to 4 are rounded to 5. Exact 0 and everything above 5 is not changed.
+i.e. if OBFUSCATION_COUNT is set to 5, only numbers from 1 to 4 are rounded to 5. Exact 0 and everything above 5 is not changed.
 
 If `SEND_REPORT_TO_SERVER` is set to true, the raw report and the obfuscated report are both sent to the report server.
 Therefore, the following variables must be additionally set:
@@ -235,6 +235,14 @@ Whether the MeasureReport should be sent to the FHIR Report server.
 Whether an obfuscated MeasureReport should be created in addition.
 
 **Default:** - `false`
+
+---
+
+#### `OBFUSCATION_COUNT`
+
+The number to wich values are clamped (obfuscated).
+
+**Default:** - `5`
 
 ---
 

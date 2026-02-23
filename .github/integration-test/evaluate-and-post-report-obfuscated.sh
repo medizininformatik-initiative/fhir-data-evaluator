@@ -15,7 +15,16 @@ export FDE_PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT="$PROJECT_IDENTIFIER_VALUE
 export FDE_SEND_REPORT_TO_SERVER=true
 export FDE_CREATE_OBFUSCATED_REPORT=true
 
-mkdir "$FDE_OUTPUT_DIR"
+if [ "$#" -ge 5 ]; then
+  export FDE_OBFUSCATION_COUNT="$5"
+  EXPECTED_POPULATION_COUNT_OBFUSCATED=$FDE_OBFUSCATION_COUNT
+  EXPECTED_STRATIFIER_COUNT_OBFUSCATED=$FDE_OBFUSCATION_COUNT
+else
+  EXPECTED_POPULATION_COUNT_OBFUSCATED=5
+  EXPECTED_STRATIFIER_COUNT_OBFUSCATED=5
+fi
+
+mkdir -p "$FDE_OUTPUT_DIR"
 
 if [[ "$1" == *"hapi"* ]]; then
   # Hapi might need some time until the previously created resources are available (the FDE fetches them to get the ID
@@ -69,8 +78,6 @@ reference_response=$(get_response "DocumentReference")
 
 EXPECTED_POPULATION_COUNT_RAW=2
 EXPECTED_STRATIFIER_COUNT_RAW=2
-EXPECTED_POPULATION_COUNT_OBFUSCATED=5
-EXPECTED_STRATIFIER_COUNT_OBFUSCATED=5
 
 raw_report_id=$(echo "$reference_response" | jq -r --arg PROJECT_IDENTIFIER_VALUE "$PROJECT_IDENTIFIER_VALUE" '.entry | map(select(.resource.masterIdentifier.value == $PROJECT_IDENTIFIER_VALUE)) | .[0].resource.content[0].attachment.url' | cut -c 15-)
 obfuscated_report_id=$(echo "$reference_response" | jq -r --arg PROJECT_IDENTIFIER_VALUE_OBFUSCATED "$PROJECT_IDENTIFIER_VALUE_OBFUSCATED" '.entry | map(select(.resource.masterIdentifier.value == $PROJECT_IDENTIFIER_VALUE_OBFUSCATED)) | .[0].resource.content[0].attachment.url' | cut -c 15-)

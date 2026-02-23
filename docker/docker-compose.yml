@@ -28,7 +28,8 @@ services:
       PROJECT_IDENTIFIER_VALUE: ${FDE_PROJECT_IDENTIFIER_VALUE:-fdpg-data-availability-report}
       PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_SYSTEM_OBFUSCATED_REPORT:-http://medizininformatik-initiative.de/sid/project-identifier}
       PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT: ${FDE_PROJECT_IDENTIFIER_VALUE_OBFUSCATED_REPORT:-fdpg-data-availability-report-obfuscated}
-      CREATE_OBFUSCATED_REPORT: ${FDE_CREATE_OBFUSCATED_REPORT:-}
+      CREATE_OBFUSCATED_REPORT: ${FDE_CREATE_OBFUSCATED_REPORT:-false}
+      OBFUSCATION_COUNT: ${FDE_OBFUSCATION_COUNT:-5}
       TZ: ${FDE_TZ:-Europe/Berlin}
     extra_hosts:
       - "auth.localhost:host-gateway"
