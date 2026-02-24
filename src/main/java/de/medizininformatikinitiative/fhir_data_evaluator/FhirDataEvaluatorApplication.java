@@ -2,7 +2,6 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.fhirpath.IFhirPath;
-import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.Measure;
@@ -63,25 +62,19 @@ public class FhirDataEvaluatorApplication {
     }
 
     @Bean
-    public IParser parser(FhirContext context) {
-        return context.newJsonParser();
-    }
-
-
-    @Bean
     public IFhirPath fhirPathEngine(FhirContext context) {
         return context.newFhirPath();
     }
 
     @Bean
-    public DataStore sourceDataStore(WebClient sourceClient, IParser parser, @Value("${fhir.source.pageCount}") int sourcePageCount,
+    public DataStore sourceDataStore(WebClient sourceClient, @Value("${fhir.source.pageCount}") int sourcePageCount,
                                      FhirContext context, IFhirPath fhirPathEngine) {
-        return new DataStore(sourceClient, parser, sourcePageCount, context, fhirPathEngine);
+        return new DataStore(sourceClient, sourcePageCount, context, fhirPathEngine);
     }
 
     @Bean
-    public DataStore reportDataStore(WebClient reportClient, IParser parser, FhirContext context, IFhirPath fhirPathEngine) {
-        return new DataStore(reportClient, parser, 100, context, fhirPathEngine);
+    public DataStore reportDataStore(WebClient reportClient, FhirContext context, IFhirPath fhirPathEngine) {
+        return new DataStore(reportClient, 100, context, fhirPathEngine);
     }
 
     @Bean
@@ -218,15 +211,15 @@ class EvaluationExecutor implements CommandLineRunner {
     private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
 
     private final MeasureEvaluator measureEvaluator;
-    private final IParser parser;
+    private final FhirContext context;
     private final Quantity durationQuantity = new Quantity()
             .setCode("s")
             .setSystem("http://unitsofmeasure.org")
             .setUnit("u");
 
-    public EvaluationExecutor(MeasureEvaluator measureEvaluator, IParser parser, DataStore reportDataStore) {
+    public EvaluationExecutor(MeasureEvaluator measureEvaluator, FhirContext context, DataStore reportDataStore) {
         this.measureEvaluator = measureEvaluator;
-        this.parser = parser;
+        this.context = context;
         this.reportDataStore = reportDataStore;
     }
 
@@ -354,7 +347,7 @@ class EvaluationExecutor implements CommandLineRunner {
 
     public void run(String... args) {
         String measureFile = getMeasureFile();
-        Measure measure = parser.parseResource(Measure.class, measureFile);
+    Measure measure = context.newJsonParser().parseResource(Measure.class, measureFile);
 
         long startTime = System.nanoTime();
         MeasureReport measureReport = measureEvaluator.evaluateMeasure(measure).block();
@@ -365,8 +358,8 @@ class EvaluationExecutor implements CommandLineRunner {
                 .setValue(durationQuantity.setValue(evaluationDuration)));
         Optional<MeasureReport> obfuscatedReport = createObfuscatedReport ? Optional.of(obfuscateReport(measureReport)) : Optional.empty();
 
-        String parsedReport = parser.encodeResourceToString(measureReport);
-        Optional<String> parsedObfuscatedReport = obfuscatedReport.map(parser::encodeResourceToString);
+        String parsedReport = context.newJsonParser().encodeResourceToString(measureReport);
+        Optional<String> parsedObfuscatedReport = obfuscatedReport.map(r -> context.newJsonParser().encodeResourceToString(r));
 
         String directoryAddition = args[0];
         String dateForBundle = args[1];

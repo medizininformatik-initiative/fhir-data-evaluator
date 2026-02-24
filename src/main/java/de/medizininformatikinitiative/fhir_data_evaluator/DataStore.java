@@ -2,11 +2,13 @@ package de.medizininformatikinitiative.fhir_data_evaluator;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.fhirpath.IFhirPath;
-import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.parser.DataFormatException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hl7.fhir.r4.model.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,16 +27,14 @@ import static de.medizininformatikinitiative.fhir_data_evaluator.ResourceWithInc
 public class DataStore {
 
     private final WebClient webClient;
-    private final IParser parser;
     private final int pageCount;
     private final FhirContext context;
     private final IFhirPath applicationFhirPathEngine;
 
     private final Logger logger = LoggerFactory.getLogger(DataStore.class);
 
-    public DataStore(WebClient webClient, IParser parser, int pageCount, FhirContext context, IFhirPath fhirPathEngine) {
+    public DataStore(WebClient webClient, int pageCount, FhirContext context, IFhirPath fhirPathEngine) {
         this.webClient = webClient;
-        this.parser = parser;
         this.pageCount = pageCount;
         this.context = context;
         this.applicationFhirPathEngine = fhirPathEngine;
@@ -52,7 +52,7 @@ public class DataStore {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnNext(response -> logger.debug("Initial query success: {}", appendPageCount(query)))
-                .map(response -> parser.parseResource(Bundle.class, response))
+                .map(this::parseBundle)
                 .expand(bundle -> Optional.ofNullable(bundle.getLink("next"))
                         .map(link -> fetchPage(webClient, link.getUrl()))
                         .orElse(Mono.empty()))
@@ -84,6 +84,49 @@ public class DataStore {
                 .bodyToMono(Void.class);
     }
 
+    /**
+     * Parses a bundle string into a {@link Bundle} and handles errors.
+     *
+     * @param   bundle string to parse
+     * @return  the parsed bundle
+     * @throws BundleParsingException   if the hapi parser could not parse the bundle
+     */
+    private Bundle parseBundle(String bundle) {
+        try {
+            return context.newJsonParser().parseResource(Bundle.class, bundle);
+        } catch (DataFormatException e) {
+            throw new BundleParsingException(e, findMalformedResource(bundle, e));
+        }
+    }
+
+    /**
+     * Parses the bundle as raw json an iterates over each entry to find the resource that hapi fails to parse.
+     *
+     * @param bundle            the bundle that contains the malformed resource
+     * @param originalException the original parsing exception that occurred when the whole bundle was parsed
+     * @return                  the ID of the malformed resource
+     */
+    private String findMalformedResource(String bundle, DataFormatException originalException) {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode bundleEntries;
+        try {
+            bundleEntries = mapper.readTree(bundle).get("entry");
+        } catch (JsonProcessingException e) {
+            throw originalException;
+        }
+        for (var bundleEntry : bundleEntries) {
+            var resource = bundleEntry.get("resource");
+            try {
+                context.newJsonParser().parseResource(resource.toString());
+            } catch (DataFormatException e) {
+                var resType = resource.get("resourceType").toString().replaceAll("\"", "");
+                var resId = resource.get("id").toString().replaceAll("\"", "");
+                return resType + "/" + resId;
+            }
+        }
+        throw originalException;
+    }
+
     private static boolean shouldRetry(HttpStatusCode code) {
         return code.is5xxServerError() || code.value() == 404;
     }
@@ -94,7 +137,7 @@ public class DataStore {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnNext(response -> logger.trace("Fetch page success: {}", url))
-                .map(response -> parser.parseResource(Bundle.class, response));
+                .map(response -> context.newJsonParser().parseResource(Bundle.class, response));
     }
 
     String appendPageCount(String query) {

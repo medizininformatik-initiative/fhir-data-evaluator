@@ -1,6 +1,6 @@
 package de.medizininformatikinitiative.fhir_data_evaluator;
 
-import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.context.FhirContext;
 import org.hl7.fhir.r4.model.Measure;
 import org.hl7.fhir.r4.model.MeasureReport;
 import org.junit.jupiter.api.BeforeAll;
@@ -94,7 +94,7 @@ class MeasureEvaluatorIntegrationTest {
     @Autowired
     private WebClient sourceClient;
     @Autowired
-    private IParser parser;
+    private FhirContext context;
 
     private static final Logger logger = LoggerFactory.getLogger(MeasureEvaluatorIntegrationTest.class);
     private static boolean dataImported = false;
@@ -130,7 +130,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Condition with single criteria")
     public void test_measure_1() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure1));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure1));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -142,7 +142,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Condition with components")
     public void test_measure_2() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure2));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure2));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
         assertThat(getCodingStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(I60_1, ACTIVE))
@@ -153,7 +153,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value code of type CodeType")
     public void test_measure_3_1() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure3_1));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure3_1));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -168,7 +168,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value code of type Enumeration")
     public void test_measure_3_2() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure3_2));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure3_2));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
@@ -180,7 +180,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Observation value exists")
     public void test_measure_4() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure4));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure4));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
         assertThat(getCodeStratumByKey(reportResult.getGroup().get(0).getStratifier().get(0).getStratum(), Set.of(EXISTS_TRUE))
@@ -195,7 +195,7 @@ class MeasureEvaluatorIntegrationTest {
     @Test
     @DisplayName("Test Unique Count")
     public void test_measure_5() throws IOException {
-        var measure = parser.parseResource(Measure.class, slurpMeasure(measure5));
+        var measure = context.newJsonParser().parseResource(Measure.class, slurpMeasure(measure5));
 
         var reportResult = measureEvaluator.evaluateMeasure(measure).block();
 
