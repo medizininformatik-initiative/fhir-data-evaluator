@@ -6,6 +6,7 @@
 * rename every occurrence of the old version, say `2.2.0-SNAPSHOT` into the new version, say `2.2.0`
 * rename every occurrence of old Docker images like `ghcr.io/medizininformatik-initiative/fhir-data-evaluator:0.1.0` 
 into the new image, say `ghcr.io/medizininformatik-initiative/fhir-data-evaluator:0.1.1`
+* update documentation links to point to the new tag (which will be created in a later step)
 * update the CHANGELOG based on the milestone
 * create a commit with the title `Release v<version>`
 * create a PR from the release branch into main

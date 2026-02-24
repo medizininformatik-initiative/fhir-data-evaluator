@@ -10,9 +10,9 @@ The Measure uses groups to distinguish between different populations.
 
 Every population must have one population criteria of type `initial-population`. The initial population defines the 'base',
 on which the evaluator operates, with a FHIR Search Query. So if the evaluator should operate on Condition resources, the 
-FHIR Search Query expression for the initial population would be "`Condition`". There can also be other populations in 
-addition to the initial population. Read more about how to use the `measure-population`and `measure-observation` 
-[here](#other-populations) to for example count not all encountered resources but only unique patient ID's.
+FHIR Search Query expression for the initial population would be `Condition`. There can also be other populations in 
+addition to the initial population. Read more about how to use the `measure-population` and `measure-observation` [here](#other-populations) 
+to for example count not all encountered resources but only unique patient ID's.
 
 
 ### Stratifier
@@ -35,8 +35,8 @@ the count of the value found at the path defined in the criteria expression, or 
 consists of components, it represents the count of each unique found *set* of values.
 All [other populations](#other-populations) are also evaluated for each stratum if they are present.
 
-* Example with a [single criteria](example-measures/example-measure-1.json)
-* Example with [components](example-measures/example-measure-3.json)
+* Example with a [single criteria](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measures/example-measure-1.json)
+* Example with [components](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measures/example-measure-3.json)
 
 
 ### Other Populations
@@ -56,7 +56,7 @@ All [other populations](#other-populations) are also evaluated for each stratum 
   `measureScore`
 
 * in case these populations are used, the measure will be a continuous-variable measure, which requires 
-[this](http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorContinuousVariableMeasure) profile
+this profile: `http://fhir-data-evaluator/StructureDefinition/FhirDataEvaluatorContinuousVariableMeasure`
 * other populations that are defined in FHIR, such as the `numerator`, are currently not supported by the Fhir Data Evaluator
 
 
@@ -68,7 +68,7 @@ or in case the stratifier consists of components, each unique found *set* of val
 The initial population of the group represents the overall count of the found resources. The initial population of a 
 stratum element represents the count of the found values/ set of values.
 
-* Example [MeasureReport](example-measure-reports/example-measure-report-1.json)
+* Example [MeasureReport](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measure-reports/example-measure-report-1.json)
 
 
 ## Profiles and Validation
