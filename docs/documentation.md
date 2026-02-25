@@ -35,8 +35,8 @@ the count of the value found at the path defined in the criteria expression, or 
 consists of components, it represents the count of each unique found *set* of values.
 All [other populations](#other-populations) are also evaluated for each stratum if they are present.
 
-* Example with a [single criteria](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measures/example-measure-1.json)
-* Example with [components](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measures/example-measure-3.json)
+* Example with a [single criteria](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.3/docs/example-measures/example-measure-1.json)
+* Example with [components](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.3/docs/example-measures/example-measure-3.json)
 
 
 ### Other Populations
@@ -68,7 +68,7 @@ or in case the stratifier consists of components, each unique found *set* of val
 The initial population of the group represents the overall count of the found resources. The initial population of a 
 stratum element represents the count of the found values/ set of values.
 
-* Example [MeasureReport](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.2/docs/example-measure-reports/example-measure-report-1.json)
+* Example [MeasureReport](https://github.com/medizininformatik-initiative/fhir-data-evaluator/blob/v1.3.3/docs/example-measure-reports/example-measure-report-1.json)
 
 
 ## Profiles and Validation

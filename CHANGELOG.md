@@ -13,6 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 ### Security
 
+## [1.3.3] - 2026-02-25
+
+### Added
+- Add Resource Information on Failures
+- Add Integration Tests with Hapi Fhir Server
+- Add Banner to Readme
+
+# Changed
+- Make Obfuscation Count Configurable
+
+### Fixed
+- Fix UUID Not Set Correctly
+- Update Links in Documentation
+
 ## [1.3.2] - 2026-02-10
 
 ### Changed
