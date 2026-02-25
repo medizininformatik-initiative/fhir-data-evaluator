@@ -208,6 +208,8 @@ class EvaluationExecutor implements CommandLineRunner {
     private String projectIdentifierValueObfuscated;
     @Value("${fhir.report.server}")
     private String reportServer;
+    @Value("${obfuscationCount}")
+    private int obfuscationCount;
     private final String TRANSACTION_BUNDLE_TEMPLATE_FILE = "/transaction-bundle-template.json";
 
     private final MeasureEvaluator measureEvaluator;
@@ -305,7 +307,7 @@ class EvaluationExecutor implements CommandLineRunner {
     }
 
     private int obfuscateCount(int count) {
-        return count >= 1 && count <= 5 ? 5 : count;
+        return count >= 1 && count <= obfuscationCount ? obfuscationCount : count;
     }
 
     private BigDecimal obfuscateCount(BigDecimal count) {
