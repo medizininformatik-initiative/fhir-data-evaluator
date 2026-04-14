@@ -1,4 +1,4 @@
-# Fhir Data Evaluator
+# FHIR® Data Evaluator
 
 [![GitHub[+] Release](https://img.shields.io/github/v/release/medizininformatik-initiative/fhir-data-evaluator?sort=date&display_name=tag&style=flat&logo=github&label=current)]() [![Docs](https://img.shields.io/badge/Docs-green.svg)](https://medizininformatik-initiative.github.io/fhir-data-evaluator/)
 
