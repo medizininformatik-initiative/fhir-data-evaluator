@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17.0.19_10-jre
 
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y jq && \
