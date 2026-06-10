@@ -1,6 +1,6 @@
 services:
   fhir-server:
-    image: "samply/blaze:0.30"
+    image: "samply/blaze:0.34"
     environment:
       BASE_URL: "http://fhir-server:8080"
       JAVA_TOOL_OPTIONS: "-Xmx1g"
