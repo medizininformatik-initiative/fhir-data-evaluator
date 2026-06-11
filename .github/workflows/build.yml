@@ -24,7 +24,7 @@ jobs:
         run: npm install -g fsh-sushi
 
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build
         working-directory: shorthand/FhirDataEvaluatorIG
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download Generated Resources
         uses: actions/download-artifact@v4
@@ -101,7 +101,7 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Blazectl
         run: .github/scripts/install-blazectl.sh
@@ -207,7 +207,7 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download Jar
         uses: actions/download-artifact@v4
