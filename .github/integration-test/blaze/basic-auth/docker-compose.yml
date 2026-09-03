@@ -11,7 +11,7 @@ services:
     volumes:
       - "data-store-data:/app/data"
   proxy:
-    image: "nginx:1.31.1"
+    image: "nginx:1.31.5"
     ports:
       - "8083:8080"
     volumes:
