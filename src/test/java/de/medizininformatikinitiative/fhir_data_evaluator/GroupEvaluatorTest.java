@@ -164,6 +164,17 @@ class GroupEvaluatorTest {
         }).toList().get(0);
     }
 
+    private static Condition addDataAbsentReason(Condition condition) {
+        Coding coding = condition.getCode().getCodingFirstRep();
+        CodeType code = new CodeType();
+        code.setExtension(List.of(new Extension()
+                .setUrl("http://hl7.org/fhir/StructureDefinition/data-absent-reason")
+                .setValue(new CodeType("masked"))));
+        coding.setCodeElement(code);
+
+        return condition;
+    }
+
     @BeforeEach
     void setUp() {
         pathEngine = createPathEngine();
@@ -601,6 +612,34 @@ class GroupEvaluatorTest {
 
                 @Nested
                 class FailTests {
+
+                    @Test
+                    @DisplayName("An extension like a data absent reason should evaluate into a 'missing field' coding.")
+                    public void test_coding_with_extension() {
+                        when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, addDataAbsentReason(getCondition()))));
+                        Measure.MeasureGroupComponent measureGroup = getMeasureGroup().setStratifier(List.of(new Measure.MeasureGroupStratifierComponent().setCriteria(COND_CODE_PATH)
+                                        .setCode(new CodeableConcept(COND_DEF_CODING))))
+                                .setPopulation(List.of(
+                                        getInitialPopulation(CONDITION_QUERY),
+                                        getInitialPopulation(CONDITION_QUERY).setCode(new CodeableConcept(new Coding().setCode("some-other-population").setSystem("some-system")))));
+                        GroupEvaluator groupEvaluator = new GroupEvaluator(dataStore, pathEngine);
+
+                        var result = groupEvaluator.evaluateGroup(measureGroup).block();
+
+                        assertThat(result).isNotNull();
+                        assertThat(findPopulationByCode(result, INITIAL_POPULATION_CODING).getCount()).isEqualTo(1);
+                        assertThat(result.getStratifier().size()).isEqualTo(1);
+                        assertThat(result.getStratifier().get(0).getStratum().size()).isEqualTo(1);
+
+
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getCode().get(0).getCodingFirstRep()))
+                                .isEqualTo(HashableCoding.ofFhirCoding(COND_DEF_CODING));
+                        assertThat(HashableCoding.ofFhirCoding(result.getStratifier().get(0).getStratum().get(0).getValue().getCodingFirstRep()))
+                                .isEqualTo(FAIL_MISSING_FIELDS);
+                        assertThat(findPopulationByCode(result.getStratifier().get(0).getStratum().get(0), INITIAL_POPULATION_CODING).getCount())
+                                .isEqualTo(1);
+                    }
+
                     @Test
                     public void test_oneStratifierElement_noValue() {
                         when(dataStore.getResources("/" + CONDITION_QUERY)).thenReturn(Flux.fromIterable(wrapWithoutIncludes(pathEngine, new Condition())));
