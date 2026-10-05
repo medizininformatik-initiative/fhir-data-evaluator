@@ -24,7 +24,7 @@ fhir:
       client:
         id: ${FHIR_REPORT_OAUTH_CLIENT_ID:}
         secret: ${FHIR_REPORT_OAUTH_CLIENT_SECRET:}
-maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:10}
+maxInMemorySizeMib: ${MAX_IN_MEMORY_SIZE_MIB:50}
 measureFile: ${MEASURE_FILE:/app/measure.json}
 outputDir: ${OUTPUT_DIR:/app/output/}
 sendReportToServer: ${SEND_REPORT_TO_SERVER:false}

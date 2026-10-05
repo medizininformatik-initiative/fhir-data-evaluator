@@ -210,7 +210,7 @@ The client secret to use for authentication with OpenID Connect provider for the
 
 The maximum in-memory buffer size for each webclient in MiB.
 
-**Default:** - `10`
+**Default:** - `50`
 
 ---
 
