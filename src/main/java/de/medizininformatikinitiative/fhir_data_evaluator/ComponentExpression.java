@@ -87,8 +87,7 @@ public record ComponentExpression(HashableCoding code, IFhirPath.IParsedExpressi
     }
 
     private StratumComponent evaluateCoding(Coding coding) {
-
-        return (coding.hasSystem() && coding.hasCode()) ?
+        return (coding.hasSystem() && coding.hasCode() && coding.getCode() != null && coding.getSystem() != null) ?
                 new StratumComponent(code, HashableCoding.ofFhirCoding(coding)) :
                 StratumComponent.ofFailedMissingFields(code);
     }
