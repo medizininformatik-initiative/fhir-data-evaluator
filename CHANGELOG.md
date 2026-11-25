@@ -13,6 +13,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 ### Security
 
+## [1.3.4] - 2026-11-25
+
+### Changed
+- Change default value of MAX_IN_MEMORY_SIZE_MIB from 10 to 50
+- Update several dependencies
+
+### Fixed
+- Fix Project Name in README.md
+- Fix Nullpointer Edge Case
+
+### Security
+- Update Eclipse Temurin
+
 ## [1.3.3] - 2026-02-25
 
 ### Added
