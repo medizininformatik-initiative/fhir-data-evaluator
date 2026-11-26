@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 ### Security
 
+## [1.3.5] - 2026-11-26
+
+### Fixed
+- Fix ARM Failure By Updating Temurin
+
 ## [1.3.4] - 2026-11-25
 
 ### Changed
