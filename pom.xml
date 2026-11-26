@@ -15,7 +15,7 @@
 	<description>Fhir Data Evaluator</description>
 	<properties>
 		<java.version>17</java.version>
-		<spring-shell.version>3.2.2</spring-shell.version>
+		<spring-shell.version>3.4.3</spring-shell.version>
 	</properties>
 	<dependencies>
 		<dependency>
